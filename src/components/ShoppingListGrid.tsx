@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { ShoppingListForm } from './ShoppingListForm';
 import { ShoppingListItem } from './ShoppingListItem';
 import { EmptyState } from './EmptyState';
 
 export function ShoppingListGrid() {
-  const { state, addList, setActiveList, deleteList, toggleDefault } = useShoppingList();
+  const navigate = useNavigate();
+  const { state, addList, deleteList, toggleDefault } = useShoppingList();
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleAddList = (name: string) => {
@@ -78,7 +80,7 @@ export function ShoppingListGrid() {
                 list={list}
                 isLast={index === state.lists.length - 1}
                 isSingleList={state.lists.length === 1}
-                onSelect={setActiveList}
+                onSelect={(id) => navigate(`/list/${id}`)}
                 onDelete={handleDeleteList}
                 onToggleDefault={handleToggleDefault}
               />
@@ -88,7 +90,6 @@ export function ShoppingListGrid() {
 
         </div>
 
-        {/* Add New List Button - Floating within the container */}
         {!showAddForm && state.lists.length > 0 && (
           <button
             onClick={() => setShowAddForm(true)}

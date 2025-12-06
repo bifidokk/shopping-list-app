@@ -4,7 +4,6 @@ import { STORAGE_KEYS } from '../constants';
 
 interface ShoppingListState {
   lists: ShoppingList[];
-  activeListId: string | null;
 }
 
 type ShoppingListAction =
@@ -12,7 +11,6 @@ type ShoppingListAction =
   | { type: 'ADD_LIST'; payload: ShoppingList }
   | { type: 'UPDATE_LIST'; payload: { id: string; updates: Partial<ShoppingList> } }
   | { type: 'DELETE_LIST'; payload: string }
-  | { type: 'SET_ACTIVE_LIST'; payload: string | null }
   | { type: 'TOGGLE_DEFAULT'; payload: string }
   | { type: 'ADD_ITEM'; payload: { listId: string; item: ShoppingItem } }
   | { type: 'UPDATE_ITEM'; payload: { listId: string; itemId: string; updates: Partial<ShoppingItem> } }
@@ -20,7 +18,6 @@ type ShoppingListAction =
 
 const initialState: ShoppingListState = {
   lists: [],
-  activeListId: null,
 };
 
 function shoppingListReducer(state: ShoppingListState, action: ShoppingListAction): ShoppingListState {
@@ -45,11 +42,7 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
       return {
         ...state,
         lists: state.lists.filter(list => list.id !== action.payload),
-        activeListId: state.activeListId === action.payload ? null : state.activeListId,
       };
-
-    case 'SET_ACTIVE_LIST':
-      return { ...state, activeListId: action.payload };
 
     case 'TOGGLE_DEFAULT':
       return {
@@ -113,13 +106,11 @@ interface ShoppingListContextValue {
   addList: (name: string) => void;
   updateList: (id: string, updates: Partial<ShoppingList>) => void;
   deleteList: (id: string) => void;
-  setActiveList: (id: string | null) => void;
   toggleDefault: (id: string) => void;
   addItem: (listId: string, name: string) => void;
   updateItem: (listId: string, itemId: string, updates: Partial<ShoppingItem>) => void;
   deleteItem: (listId: string, itemId: string) => void;
   shareList: (id: string) => string;
-  getActiveList: () => ShoppingList | null;
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
@@ -180,10 +171,6 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'DELETE_LIST', payload: id });
   };
 
-  const setActiveList = (id: string | null) => {
-    dispatch({ type: 'SET_ACTIVE_LIST', payload: id });
-  };
-
   const toggleDefault = (id: string) => {
     dispatch({ type: 'TOGGLE_DEFAULT', payload: id });
   };
@@ -212,22 +199,16 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     return `${window.location.origin}/shared/${shareId}`;
   };
 
-  const getActiveList = (): ShoppingList | null => {
-    return state.lists.find(list => list.id === state.activeListId) || null;
-  };
-
   const value: ShoppingListContextValue = {
     state,
     addList,
     updateList,
     deleteList,
-    setActiveList,
     toggleDefault,
     addItem,
     updateItem,
     deleteItem,
     shareList,
-    getActiveList,
   };
 
   return (

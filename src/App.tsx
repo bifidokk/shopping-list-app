@@ -1,5 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { ShoppingListProvider, useShoppingList } from './context/ShoppingListContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ShoppingListProvider } from './context/ShoppingListContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { initTelegramWebApp } from './utils/telegram';
@@ -8,8 +9,6 @@ const ShoppingListGrid = lazy(() => import('./components/ShoppingListGrid').then
 const ShoppingListView = lazy(() => import('./components/ShoppingListView').then(m => ({ default: m.ShoppingListView })));
 
 function AppContent() {
-  const { state } = useShoppingList();
-
   useEffect(() => {
     initTelegramWebApp();
   }, []);
@@ -21,7 +20,11 @@ function AppContent() {
           <LoadingSpinner size="lg" />
         </div>
       }>
-        {state.activeListId ? <ShoppingListView /> : <ShoppingListGrid />}
+        <Routes>
+          <Route path="/" element={<ShoppingListGrid />} />
+          <Route path="/list/:id" element={<ShoppingListView />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </Suspense>
     </div>
   );
@@ -30,9 +33,11 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <ShoppingListProvider>
-        <AppContent />
-      </ShoppingListProvider>
+      <BrowserRouter>
+        <ShoppingListProvider>
+          <AppContent />
+        </ShoppingListProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 }

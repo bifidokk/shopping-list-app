@@ -1,19 +1,22 @@
 import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { ShoppingItemComponent } from './ShoppingItemComponent';
 import { AddItemForm } from './AddItemForm';
 
 export function ShoppingListView() {
-  const { state, setActiveList, deleteList, shareList, updateList } = useShoppingList();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { state, deleteList, shareList, updateList } = useShoppingList();
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
 
-  const activeList = state.lists.find(list => list.id === state.activeListId);
+  const activeList = state.lists.find(list => list.id === id);
 
   if (!activeList) {
     return (
       <div className="text-center py-8 text-gray-500">
-        Select a shopping list to view
+        List not found
       </div>
     );
   }
@@ -60,13 +63,13 @@ export function ShoppingListView() {
       }, (buttonId) => {
         if (buttonId === 'destructive') {
           deleteList(activeList.id);
-          setActiveList(null);
+          navigate('/');
         }
       });
     } else {
       if (confirm('Are you sure you want to delete this shopping list?')) {
         deleteList(activeList.id);
-        setActiveList(null);
+        navigate('/');
       }
     }
   };
@@ -91,7 +94,7 @@ export function ShoppingListView() {
       <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between mb-4">
           <button
-            onClick={() => setActiveList(null)}
+            onClick={() => navigate('/')}
             className="text-blue-500 font-medium"
           >
             ← Back
