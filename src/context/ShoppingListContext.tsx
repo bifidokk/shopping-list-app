@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ShoppingList, ShoppingItem } from '../types';
-import { STORAGE_KEYS } from '../constants';
+import { shoppingListsApi } from '../api/shopping-lists';
+import { ApiError } from '../api/client';
 
 interface ShoppingListState {
   lists: ShoppingList[];
+  loading: boolean;
+  error: string | null;
 }
 
 type ShoppingListAction =
@@ -14,10 +17,14 @@ type ShoppingListAction =
   | { type: 'TOGGLE_DEFAULT'; payload: string }
   | { type: 'ADD_ITEM'; payload: { listId: string; item: ShoppingItem } }
   | { type: 'UPDATE_ITEM'; payload: { listId: string; itemId: string; updates: Partial<ShoppingItem> } }
-  | { type: 'DELETE_ITEM'; payload: { listId: string; itemId: string } };
+  | { type: 'DELETE_ITEM'; payload: { listId: string; itemId: string } }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null };
 
 const initialState: ShoppingListState = {
   lists: [],
+  loading: false,
+  error: null,
 };
 
 function shoppingListReducer(state: ShoppingListState, action: ShoppingListAction): ShoppingListState {
@@ -96,6 +103,12 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
         ),
       };
 
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+
+    case 'SET_ERROR':
+      return { ...state, error: action.payload };
+
     default:
       return state;
   }
@@ -103,14 +116,15 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
 
 interface ShoppingListContextValue {
   state: ShoppingListState;
-  addList: (name: string) => void;
-  updateList: (id: string, updates: Partial<ShoppingList>) => void;
-  deleteList: (id: string) => void;
-  toggleDefault: (id: string) => void;
-  addItem: (listId: string, name: string) => void;
-  updateItem: (listId: string, itemId: string, updates: Partial<ShoppingItem>) => void;
-  deleteItem: (listId: string, itemId: string) => void;
-  shareList: (id: string) => string;
+  addList: (name: string) => Promise<void>;
+  updateList: (id: string, updates: Partial<ShoppingList>) => Promise<void>;
+  deleteList: (id: string) => Promise<void>;
+  toggleDefault: (id: string) => Promise<void>;
+  addItem: (listId: string, name: string) => Promise<void>;
+  updateItem: (listId: string, itemId: string, updates: Partial<ShoppingItem>) => Promise<void>;
+  deleteItem: (listId: string, itemId: string) => Promise<void>;
+  shareList: (id: string) => Promise<string>;
+  refreshLists: () => Promise<void>;
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
@@ -127,77 +141,134 @@ export const useShoppingList = () => {
 export function ShoppingListProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(shoppingListReducer, initialState);
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SHOPPING_LISTS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as ShoppingList[];
-        const lists = parsed.map((list) => ({
-          ...list,
-          createdAt: new Date(list.createdAt),
-          updatedAt: new Date(list.updatedAt),
-          items: list.items.map((item) => ({
-            ...item,
-            createdAt: new Date(item.createdAt),
-          })),
-        }));
-        dispatch({ type: 'SET_LISTS', payload: lists });
-      } catch (error) {
-        console.error('Failed to load shopping lists:', error);
-      }
+  const refreshLists = async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    try {
+      const response = await shoppingListsApi.getLists();
+      const lists = response.lists.map((list) => ({
+        ...list,
+        createdAt: new Date(list.createdAt),
+        updatedAt: new Date(list.updatedAt),
+        items: list.items.map((item) => ({
+          ...item,
+          createdAt: new Date(item.createdAt),
+        })),
+      }));
+      dispatch({ type: 'SET_LISTS', payload: lists });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to load shopping lists';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to load shopping lists:', error);
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
+  };
+
+  useEffect(() => {
+    refreshLists();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SHOPPING_LISTS, JSON.stringify(state.lists));
-  }, [state.lists]);
-
-  const addList = (name: string) => {
-    const newList: ShoppingList = {
-      id: crypto.randomUUID(),
-      name,
-      items: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      sharedWith: 1,
-    };
-    dispatch({ type: 'ADD_LIST', payload: newList });
+  const addList = async (name: string) => {
+    try {
+      const response = await shoppingListsApi.createList({ name });
+      const list = {
+        ...response.list,
+        createdAt: new Date(response.list.createdAt),
+        updatedAt: new Date(response.list.updatedAt),
+        items: response.list.items.map((item) => ({
+          ...item,
+          createdAt: new Date(item.createdAt),
+        })),
+      };
+      dispatch({ type: 'ADD_LIST', payload: list });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to create list';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
-  const updateList = (id: string, updates: Partial<ShoppingList>) => {
-    dispatch({ type: 'UPDATE_LIST', payload: { id, updates } });
+  const updateList = async (id: string, updates: Partial<ShoppingList>) => {
+    try {
+      await shoppingListsApi.updateList(id, updates);
+      dispatch({ type: 'UPDATE_LIST', payload: { id, updates } });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to update list';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
-  const deleteList = (id: string) => {
-    dispatch({ type: 'DELETE_LIST', payload: id });
+  const deleteList = async (id: string) => {
+    try {
+      await shoppingListsApi.deleteList(id);
+      dispatch({ type: 'DELETE_LIST', payload: id });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to delete list';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
-  const toggleDefault = (id: string) => {
-    dispatch({ type: 'TOGGLE_DEFAULT', payload: id });
+  const toggleDefault = async (id: string) => {
+    try {
+      await shoppingListsApi.toggleDefault(id);
+      dispatch({ type: 'TOGGLE_DEFAULT', payload: id });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to toggle default';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
-  const addItem = (listId: string, name: string) => {
-    const newItem: ShoppingItem = {
-      id: crypto.randomUUID(),
-      name,
-      completed: false,
-      createdAt: new Date(),
-    };
-    dispatch({ type: 'ADD_ITEM', payload: { listId, item: newItem } });
+  const addItem = async (listId: string, name: string) => {
+    try {
+      const response = await shoppingListsApi.addItem(listId, { name });
+      const item = {
+        ...response.item,
+        createdAt: new Date(response.item.createdAt),
+      };
+      dispatch({ type: 'ADD_ITEM', payload: { listId, item } });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to add item';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
-  const updateItem = (listId: string, itemId: string, updates: Partial<ShoppingItem>) => {
-    dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates } });
+  const updateItem = async (listId: string, itemId: string, updates: Partial<ShoppingItem>) => {
+    try {
+      await shoppingListsApi.updateItem(listId, itemId, updates);
+      dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates } });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to update item';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
-  const deleteItem = (listId: string, itemId: string) => {
-    dispatch({ type: 'DELETE_ITEM', payload: { listId, itemId } });
+  const deleteItem = async (listId: string, itemId: string) => {
+    try {
+      await shoppingListsApi.deleteItem(listId, itemId);
+      dispatch({ type: 'DELETE_ITEM', payload: { listId, itemId } });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to delete item';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
-  const shareList = (id: string): string => {
-    const shareId = crypto.randomUUID();
-    updateList(id, { shareId });
-    return `${window.location.origin}/shared/${shareId}`;
+  const shareList = async (id: string): Promise<string> => {
+    try {
+      const response = await shoppingListsApi.shareList(id);
+      dispatch({ type: 'UPDATE_LIST', payload: { id, updates: { shareId: response.shareId } } });
+      return response.shareUrl;
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to share list';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
   };
 
   const value: ShoppingListContextValue = {
@@ -210,6 +281,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     updateItem,
     deleteItem,
     shareList,
+    refreshLists,
   };
 
   return (
