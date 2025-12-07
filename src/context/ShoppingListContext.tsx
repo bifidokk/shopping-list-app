@@ -159,6 +159,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       items: [],
       createdAt: new Date(),
       updatedAt: new Date(),
+      sharedWith: 1,
     };
     dispatch({ type: 'ADD_LIST', payload: newList });
   };

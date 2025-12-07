@@ -13,4 +13,5 @@ export interface ShoppingList {
   updatedAt: Date;
   shareId?: string;
   isDefault?: boolean;
+  sharedWith?: number;
 }

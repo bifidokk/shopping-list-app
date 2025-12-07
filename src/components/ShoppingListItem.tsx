@@ -1,4 +1,6 @@
 import React from 'react';
+import { DropdownMenu, IconButton } from '@radix-ui/themes';
+import { DotsVerticalIcon, Share1Icon, TrashIcon } from '@radix-ui/react-icons';
 import type { ShoppingList } from '../types';
 
 interface ShoppingListItemProps {
@@ -7,10 +9,11 @@ interface ShoppingListItemProps {
   isSingleList: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string, e: React.MouseEvent) => void;
+  onShare: (id: string, e: React.MouseEvent) => void;
   onToggleDefault: (id: string, e: React.MouseEvent) => void;
 }
 
-export const ShoppingListItem = React.memo(({ list, isLast, isSingleList, onSelect, onDelete, onToggleDefault }: ShoppingListItemProps) => {
+export const ShoppingListItem = React.memo(({ list, isLast, isSingleList, onSelect, onDelete, onShare, onToggleDefault }: ShoppingListItemProps) => {
   const completedCount = list.items.filter(item => item.completed).length;
   const totalCount = list.items.length;
   const isDefault = isSingleList || list.isDefault;
@@ -51,12 +54,12 @@ export const ShoppingListItem = React.memo(({ list, isLast, isSingleList, onSele
             <span className="text-sm text-gray-500">
               {completedCount}/{totalCount} items
             </span>
-            {totalCount > 1 && (
+            {list.sharedWith && list.sharedWith > 0 && (
               <div className="flex items-center gap-1 text-sm text-gray-500">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
                 </svg>
-                <span>2</span>
+                <span>{list.sharedWith}</span>
               </div>
             )}
           </div>
@@ -80,14 +83,27 @@ export const ShoppingListItem = React.memo(({ list, isLast, isSingleList, onSele
         <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"/>
         </svg>
-        <button
-          onClick={(e) => onDelete(list.id, e)}
-          className="text-gray-400 hover:text-red-500 p-1 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-          </svg>
-        </button>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <IconButton
+              variant="ghost"
+              color="gray"
+              size="2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DotsVerticalIcon />
+            </IconButton>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            <DropdownMenu.Item onClick={(e) => onShare(list.id, e as unknown as React.MouseEvent)}>
+              <Share1Icon /> Share
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item color="red" onClick={(e) => onDelete(list.id, e as unknown as React.MouseEvent)}>
+              <TrashIcon /> Delete
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import { EmptyState } from './EmptyState';
 
 export function ShoppingListGrid() {
   const navigate = useNavigate();
-  const { state, addList, deleteList, toggleDefault } = useShoppingList();
+  const { state, addList, deleteList, toggleDefault, shareList } = useShoppingList();
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleAddList = (name: string) => {
@@ -48,6 +48,31 @@ export function ShoppingListGrid() {
     }
   };
 
+  const handleShareList = (listId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = shareList(listId);
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.showPopup({
+        title: 'Share List',
+        message: 'Share this shopping list with friends!',
+        buttons: [
+          {
+            type: 'default',
+            text: 'Copy Link',
+          },
+          {
+            type: 'close',
+            text: 'Close',
+          },
+        ],
+      });
+      navigator.clipboard.writeText(shareUrl);
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      alert('Share link copied to clipboard!');
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white h-screen flex flex-col">
       <div className="bg-blue-500 p-4 flex-shrink-0">
@@ -82,6 +107,7 @@ export function ShoppingListGrid() {
                 isSingleList={state.lists.length === 1}
                 onSelect={(id) => navigate(`/list/${id}`)}
                 onDelete={handleDeleteList}
+                onShare={handleShareList}
                 onToggleDefault={handleToggleDefault}
               />
             ))}
