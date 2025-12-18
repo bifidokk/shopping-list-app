@@ -51,6 +51,17 @@ async function request<T>(
       );
     }
 
+    // Handle empty responses (common for DELETE requests)
+    const contentType = response.headers.get('content-type');
+    const contentLength = response.headers.get('content-length');
+
+    if (contentLength === '0' || !contentType?.includes('application/json')) {
+      const text = await response.text();
+      if (!text) {
+        return undefined as T;
+      }
+    }
+
     return await response.json();
   } catch (error) {
     if (error instanceof ApiError) {

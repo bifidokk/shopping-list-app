@@ -160,10 +160,12 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       // Backend returns plain array directly
       const lists = response.map((list: any) => ({
         ...list,
+        id: Number(list.id),
         createdAt: new Date(list.createdAt),
         updatedAt: new Date(list.updatedAt),
         items: (list.items || []).map((item: any) => ({
           ...item,
+          id: Number(item.id),
           completed: item.isDone ?? item.completed ?? false,
           createdAt: new Date(item.createdAt),
         })),
@@ -184,6 +186,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       // Backend returns plain array directly
       const items = response.map((item: any) => ({
         ...item,
+        id: Number(item.id),
         completed: item.isDone ?? item.completed ?? false,
         createdAt: new Date(item.createdAt),
       }));
@@ -202,14 +205,16 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
 
   const addList = async (name: string) => {
     try {
-      const response = await shoppingListsApi.createList({ name });
+      const response: any = await shoppingListsApi.createList({ name });
       // Backend returns plain object directly
       const list = {
         ...response,
+        id: Number(response.id),
         createdAt: new Date(response.createdAt),
         updatedAt: new Date(response.updatedAt),
         items: (response.items || []).map((item: any) => ({
           ...item,
+          id: Number(item.id),
           completed: item.isDone ?? item.completed ?? false,
           createdAt: new Date(item.createdAt),
         })),
@@ -250,6 +255,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       // Backend returns plain object directly
       const item = {
         ...response,
+        id: Number(response.id),
         completed: response.isDone ?? response.completed ?? false,
         createdAt: new Date(response.createdAt),
       };
@@ -267,6 +273,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       // Backend returns plain object directly
       const item = {
         ...response,
+        id: Number(response.id),
         completed: response.isDone ?? response.completed ?? false,
         createdAt: new Date(response.createdAt),
       };
@@ -296,6 +303,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Failed to delete item';
       dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to delete item:', error);
       throw error;
     }
   };
