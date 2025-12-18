@@ -82,8 +82,8 @@ export function ShoppingListView() {
   const pendingItems = activeList.items.filter(item => !item.completed);
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen">
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+    <div className="max-w-md mx-auto bg-white h-screen flex flex-col">
+      <div className="bg-white border-b border-gray-200 p-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate('/')}
@@ -135,45 +135,47 @@ export function ShoppingListView() {
         </div>
       </div>
 
-      <div className="p-4">
-        <AddItemForm listId={activeList.id} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 pb-8">
+          <AddItemForm listId={activeList.id} />
 
-        <div className="space-y-4 mt-6">
-          {pendingItems.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">To Buy</h3>
-              <div className="space-y-2">
-                {pendingItems.map(item => (
-                  <ShoppingItemComponent
-                    key={item.id}
-                    item={item}
-                    listId={activeList.id}
-                  />
-                ))}
+          <div className="space-y-4 mt-6">
+            {pendingItems.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">To Buy</h3>
+                <div className="space-y-2">
+                  {pendingItems.map(item => (
+                    <ShoppingItemComponent
+                      key={item.id}
+                      item={item}
+                      listId={activeList.id}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {completedItems.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Completed</h3>
-              <div className="space-y-2">
-                {completedItems.map(item => (
-                  <ShoppingItemComponent
-                    key={item.id}
-                    item={item}
-                    listId={activeList.id}
-                  />
-                ))}
+            {completedItems.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Completed</h3>
+                <div className="space-y-2">
+                  {completedItems.map(item => (
+                    <ShoppingItemComponent
+                      key={item.id}
+                      item={item}
+                      listId={activeList.id}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeList.items.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No items yet. Add your first item above!
-            </div>
-          )}
+            {activeList.items.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No items yet. Add your first item above!
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
