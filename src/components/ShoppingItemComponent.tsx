@@ -7,7 +7,7 @@ import { useTelegramHaptics } from '../utils/telegram';
 
 interface ShoppingItemComponentProps {
   item: ShoppingItem;
-  listId: string;
+  listId: number;
 }
 
 export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemComponentProps) => {

@@ -1,12 +1,12 @@
 export interface ShoppingItem {
-  id: string;
+  id: number;
   name: string;
   completed: boolean;
   createdAt: Date;
 }
 
 export interface ShoppingList {
-  id: string;
+  id: number;
   name: string;
   items: ShoppingItem[];
   createdAt: Date;

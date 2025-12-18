@@ -12,12 +12,12 @@ interface ShoppingListState {
 type ShoppingListAction =
   | { type: 'SET_LISTS'; payload: ShoppingList[] }
   | { type: 'ADD_LIST'; payload: ShoppingList }
-  | { type: 'UPDATE_LIST'; payload: { id: string; updates: Partial<ShoppingList> } }
-  | { type: 'DELETE_LIST'; payload: string }
-  | { type: 'TOGGLE_DEFAULT'; payload: string }
-  | { type: 'ADD_ITEM'; payload: { listId: string; item: ShoppingItem } }
-  | { type: 'UPDATE_ITEM'; payload: { listId: string; itemId: string; updates: Partial<ShoppingItem> } }
-  | { type: 'DELETE_ITEM'; payload: { listId: string; itemId: string } }
+  | { type: 'UPDATE_LIST'; payload: { id: number; updates: Partial<ShoppingList> } }
+  | { type: 'DELETE_LIST'; payload: number }
+  | { type: 'TOGGLE_DEFAULT'; payload: number }
+  | { type: 'ADD_ITEM'; payload: { listId: number; item: ShoppingItem } }
+  | { type: 'UPDATE_ITEM'; payload: { listId: number; itemId: number; updates: Partial<ShoppingItem> } }
+  | { type: 'DELETE_ITEM'; payload: { listId: number; itemId: number } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };
 
@@ -117,12 +117,12 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
 interface ShoppingListContextValue {
   state: ShoppingListState;
   addList: (name: string) => Promise<void>;
-  updateList: (id: string, updates: Partial<ShoppingList>) => Promise<void>;
-  deleteList: (id: string) => Promise<void>;
-  addItem: (listId: string, name: string) => Promise<void>;
-  updateItem: (listId: string, itemId: string, updates: Partial<ShoppingItem>) => Promise<void>;
-  deleteItem: (listId: string, itemId: string) => Promise<void>;
-  toggleItem: (listId: string, itemId: string) => Promise<void>;
+  updateList: (id: number, updates: Partial<ShoppingList>) => Promise<void>;
+  deleteList: (id: number) => Promise<void>;
+  addItem: (listId: number, name: string) => Promise<void>;
+  updateItem: (listId: number, itemId: number, updates: Partial<ShoppingItem>) => Promise<void>;
+  deleteItem: (listId: number, itemId: number) => Promise<void>;
+  toggleItem: (listId: number, itemId: number) => Promise<void>;
   refreshLists: () => Promise<void>;
 }
 
@@ -190,7 +190,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const updateList = async (id: string, updates: Partial<ShoppingList>) => {
+  const updateList = async (id: number, updates: Partial<ShoppingList>) => {
     try {
       await shoppingListsApi.updateList(id, updates);
       dispatch({ type: 'UPDATE_LIST', payload: { id, updates } });
@@ -201,7 +201,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const deleteList = async (id: string) => {
+  const deleteList = async (id: number) => {
     try {
       await shoppingListsApi.deleteList(id);
       dispatch({ type: 'DELETE_LIST', payload: id });
@@ -212,7 +212,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const toggleItem = async (listId: string, itemId: string) => {
+  const toggleItem = async (listId: number, itemId: number) => {
     try {
       const response = await shoppingListsApi.toggleItem(listId, itemId);
       // Backend returns plain object directly
@@ -228,7 +228,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const addItem = async (listId: string, name: string) => {
+  const addItem = async (listId: number, name: string) => {
     try {
       const response = await shoppingListsApi.addItem(listId, { name });
       // Backend returns plain object directly
@@ -244,7 +244,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const updateItem = async (listId: string, itemId: string, updates: Partial<ShoppingItem>) => {
+  const updateItem = async (listId: number, itemId: number, updates: Partial<ShoppingItem>) => {
     try {
       await shoppingListsApi.updateItem(listId, itemId, updates);
       dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates } });
@@ -255,7 +255,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const deleteItem = async (listId: string, itemId: string) => {
+  const deleteItem = async (listId: number, itemId: number) => {
     try {
       await shoppingListsApi.deleteItem(listId, itemId);
       dispatch({ type: 'DELETE_ITEM', payload: { listId, itemId } });

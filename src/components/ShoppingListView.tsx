@@ -11,7 +11,7 @@ export function ShoppingListView() {
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
 
-  const activeList = state.lists.find(list => list.id === id);
+  const activeList = state.lists.find(list => list.id === Number(id));
 
   if (!activeList) {
     return (

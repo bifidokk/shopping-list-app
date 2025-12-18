@@ -3,7 +3,7 @@ import { TextField, Button, Flex } from '@radix-ui/themes';
 import { useShoppingList } from '../context/ShoppingListContext';
 
 interface AddItemFormProps {
-  listId: string;
+  listId: number;
 }
 
 export const AddItemForm = React.memo(({ listId }: AddItemFormProps) => {
