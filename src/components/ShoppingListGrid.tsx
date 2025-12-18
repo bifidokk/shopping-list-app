@@ -15,7 +15,7 @@ export function ShoppingListGrid() {
     setShowAddForm(false);
   };
 
-  const handleDeleteList = (listId: string, e: React.MouseEvent) => {
+  const handleDeleteList = async (listId: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.showPopup({
@@ -23,22 +23,32 @@ export function ShoppingListGrid() {
         message: 'Are you sure you want to delete this shopping list?',
         buttons: [
           {
+            id: 'delete',
             type: 'destructive',
             text: 'Delete',
           },
           {
+            id: 'cancel',
             type: 'cancel',
             text: 'Cancel',
           },
         ],
-      }, (buttonId) => {
-        if (buttonId === 'destructive') {
-          deleteList(listId);
+      }, async (buttonId) => {
+        if (buttonId === 'delete') {
+          try {
+            await deleteList(listId);
+          } catch (error) {
+            console.error('Failed to delete list:', error);
+          }
         }
       });
     } else {
       if (confirm('Are you sure you want to delete this shopping list?')) {
-        deleteList(listId);
+        try {
+          await deleteList(listId);
+        } catch (error) {
+          console.error('Failed to delete list:', error);
+        }
       }
     }
   };

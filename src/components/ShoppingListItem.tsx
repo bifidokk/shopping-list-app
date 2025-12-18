@@ -7,8 +7,8 @@ interface ShoppingListItemProps {
   list: ShoppingList;
   isLast: boolean;
   isSingleList: boolean;
-  onSelect: (id: string) => void;
-  onDelete: (id: string, e: React.MouseEvent) => void;
+  onSelect: (id: number) => void;
+  onDelete: (id: number, e: React.MouseEvent) => void;
 }
 
 export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete }: ShoppingListItemProps) => {
@@ -79,7 +79,10 @@ export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete }
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
-            <DropdownMenu.Item color="red" onClick={(e) => onDelete(list.id, e as unknown as React.MouseEvent)}>
+            <DropdownMenu.Item color="red" onClick={(e) => {
+              e.stopPropagation();
+              onDelete(list.id, e as unknown as React.MouseEvent);
+            }}>
               <TrashIcon /> Delete
             </DropdownMenu.Item>
           </DropdownMenu.Content>
