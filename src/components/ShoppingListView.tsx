@@ -7,7 +7,7 @@ import { AddItemForm } from './AddItemForm';
 export function ShoppingListView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { state, deleteList, shareList, updateList } = useShoppingList();
+  const { state, deleteList, updateList } = useShoppingList();
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
 
@@ -20,30 +20,6 @@ export function ShoppingListView() {
       </div>
     );
   }
-
-  const handleShare = async () => {
-    const shareUrl = shareList(activeList.id);
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.showPopup({
-        title: 'Share List',
-        message: 'Share this shopping list with friends!',
-        buttons: [
-          {
-            type: 'default',
-            text: 'Copy Link',
-          },
-          {
-            type: 'close',
-            text: 'Close',
-          },
-        ],
-      });
-      navigator.clipboard.writeText(shareUrl);
-    } else {
-      navigator.clipboard.writeText(shareUrl);
-      alert('Share link copied to clipboard!');
-    }
-  };
 
   const handleDelete = () => {
     if (window.Telegram?.WebApp) {
@@ -99,20 +75,12 @@ export function ShoppingListView() {
           >
             ← Back
           </button>
-          <div className="flex space-x-2">
-            <button
-              onClick={handleShare}
-              className="text-blue-500 font-medium"
-            >
-              Share
-            </button>
-            <button
-              onClick={handleDelete}
-              className="text-red-500 font-medium"
-            >
-              Delete
-            </button>
-          </div>
+          <button
+            onClick={handleDelete}
+            className="text-red-500 font-medium"
+          >
+            Delete
+          </button>
         </div>
 
         {editingName ? (

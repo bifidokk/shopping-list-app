@@ -7,37 +7,42 @@ import type {
   ListsResponse,
   ListResponse,
   ItemResponse,
-  ShareListResponse,
+  ItemsResponse,
 } from './types';
 
 export const shoppingListsApi = {
+  // Shopping Lists endpoints
   getLists: () =>
-    apiClient.get<ListsResponse>('/lists'),
+    apiClient.get<ListsResponse>('/api/shopping-lists'),
 
   getList: (id: string) =>
-    apiClient.get<ListResponse>(`/lists/${id}`),
+    apiClient.get<ListResponse>(`/api/shopping-lists/${id}`),
 
   createList: (data: CreateListRequest) =>
-    apiClient.post<ListResponse>('/lists', data),
+    apiClient.post<ListResponse>('/api/shopping-lists', data),
 
   updateList: (id: string, data: UpdateListRequest) =>
-    apiClient.patch<ListResponse>(`/lists/${id}`, data),
+    apiClient.patch<ListResponse>(`/api/shopping-lists/${id}`, data),
 
   deleteList: (id: string) =>
-    apiClient.delete<void>(`/lists/${id}`),
+    apiClient.delete<void>(`/api/shopping-lists/${id}`),
 
-  shareList: (id: string) =>
-    apiClient.post<ShareListResponse>(`/lists/${id}/share`),
+  // Items endpoints
+  getItems: (listId: string) =>
+    apiClient.get<ItemsResponse>(`/api/shopping-lists/${listId}/items`),
 
-  toggleDefault: (id: string) =>
-    apiClient.post<ListResponse>(`/lists/${id}/toggle-default`),
+  getItem: (listId: string, itemId: string) =>
+    apiClient.get<ItemResponse>(`/api/shopping-lists/${listId}/items/${itemId}`),
 
   addItem: (listId: string, data: CreateItemRequest) =>
-    apiClient.post<ItemResponse>(`/lists/${listId}/items`, data),
+    apiClient.post<ItemResponse>(`/api/shopping-lists/${listId}/items`, data),
 
   updateItem: (listId: string, itemId: string, data: UpdateItemRequest) =>
-    apiClient.patch<ItemResponse>(`/lists/${listId}/items/${itemId}`, data),
+    apiClient.patch<ItemResponse>(`/api/shopping-lists/${listId}/items/${itemId}`, data),
 
   deleteItem: (listId: string, itemId: string) =>
-    apiClient.delete<void>(`/lists/${listId}/items/${itemId}`),
+    apiClient.delete<void>(`/api/shopping-lists/${listId}/items/${itemId}`),
+
+  toggleItem: (listId: string, itemId: string) =>
+    apiClient.post<ItemResponse>(`/api/shopping-lists/${listId}/items/${itemId}/toggle`),
 };

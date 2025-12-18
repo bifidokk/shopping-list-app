@@ -33,7 +33,7 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
       return { ...state, lists: action.payload };
 
     case 'ADD_LIST':
-      return { ...state, lists: [...state.lists, action.payload] };
+      return { ...state, lists: [action.payload, ...state.lists] };
 
     case 'UPDATE_LIST':
       return {
@@ -119,11 +119,10 @@ interface ShoppingListContextValue {
   addList: (name: string) => Promise<void>;
   updateList: (id: string, updates: Partial<ShoppingList>) => Promise<void>;
   deleteList: (id: string) => Promise<void>;
-  toggleDefault: (id: string) => Promise<void>;
   addItem: (listId: string, name: string) => Promise<void>;
   updateItem: (listId: string, itemId: string, updates: Partial<ShoppingItem>) => Promise<void>;
   deleteItem: (listId: string, itemId: string) => Promise<void>;
-  shareList: (id: string) => Promise<string>;
+  toggleItem: (listId: string, itemId: string) => Promise<void>;
   refreshLists: () => Promise<void>;
 }
 
@@ -146,11 +145,12 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'SET_ERROR', payload: null });
     try {
       const response = await shoppingListsApi.getLists();
-      const lists = response.lists.map((list) => ({
+      // Backend returns plain array directly
+      const lists = response.map((list) => ({
         ...list,
         createdAt: new Date(list.createdAt),
         updatedAt: new Date(list.updatedAt),
-        items: list.items.map((item) => ({
+        items: (list.items || []).map((item) => ({
           ...item,
           createdAt: new Date(item.createdAt),
         })),
@@ -172,11 +172,12 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   const addList = async (name: string) => {
     try {
       const response = await shoppingListsApi.createList({ name });
+      // Backend returns plain object directly
       const list = {
-        ...response.list,
-        createdAt: new Date(response.list.createdAt),
-        updatedAt: new Date(response.list.updatedAt),
-        items: response.list.items.map((item) => ({
+        ...response,
+        createdAt: new Date(response.createdAt),
+        updatedAt: new Date(response.updatedAt),
+        items: (response.items || []).map((item) => ({
           ...item,
           createdAt: new Date(item.createdAt),
         })),
@@ -211,12 +212,17 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const toggleDefault = async (id: string) => {
+  const toggleItem = async (listId: string, itemId: string) => {
     try {
-      await shoppingListsApi.toggleDefault(id);
-      dispatch({ type: 'TOGGLE_DEFAULT', payload: id });
+      const response = await shoppingListsApi.toggleItem(listId, itemId);
+      // Backend returns plain object directly
+      const item = {
+        ...response,
+        createdAt: new Date(response.createdAt),
+      };
+      dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: item.completed } } });
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Failed to toggle default';
+      const message = error instanceof ApiError ? error.message : 'Failed to toggle item';
       dispatch({ type: 'SET_ERROR', payload: message });
       throw error;
     }
@@ -225,9 +231,10 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   const addItem = async (listId: string, name: string) => {
     try {
       const response = await shoppingListsApi.addItem(listId, { name });
+      // Backend returns plain object directly
       const item = {
-        ...response.item,
-        createdAt: new Date(response.item.createdAt),
+        ...response,
+        createdAt: new Date(response.createdAt),
       };
       dispatch({ type: 'ADD_ITEM', payload: { listId, item } });
     } catch (error) {
@@ -259,28 +266,15 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const shareList = async (id: string): Promise<string> => {
-    try {
-      const response = await shoppingListsApi.shareList(id);
-      dispatch({ type: 'UPDATE_LIST', payload: { id, updates: { shareId: response.shareId } } });
-      return response.shareUrl;
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Failed to share list';
-      dispatch({ type: 'SET_ERROR', payload: message });
-      throw error;
-    }
-  };
-
   const value: ShoppingListContextValue = {
     state,
     addList,
     updateList,
     deleteList,
-    toggleDefault,
     addItem,
     updateItem,
     deleteItem,
-    shareList,
+    toggleItem,
     refreshLists,
   };
 

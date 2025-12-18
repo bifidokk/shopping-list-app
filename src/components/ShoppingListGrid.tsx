@@ -7,17 +7,12 @@ import { EmptyState } from './EmptyState';
 
 export function ShoppingListGrid() {
   const navigate = useNavigate();
-  const { state, addList, deleteList, toggleDefault, shareList } = useShoppingList();
+  const { state, addList, deleteList } = useShoppingList();
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleAddList = (name: string) => {
     addList(name);
     setShowAddForm(false);
-  };
-
-  const handleToggleDefault = (listId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    toggleDefault(listId);
   };
 
   const handleDeleteList = (listId: string, e: React.MouseEvent) => {
@@ -45,31 +40,6 @@ export function ShoppingListGrid() {
       if (confirm('Are you sure you want to delete this shopping list?')) {
         deleteList(listId);
       }
-    }
-  };
-
-  const handleShareList = (listId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const shareUrl = shareList(listId);
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.showPopup({
-        title: 'Share List',
-        message: 'Share this shopping list with friends!',
-        buttons: [
-          {
-            type: 'default',
-            text: 'Copy Link',
-          },
-          {
-            type: 'close',
-            text: 'Close',
-          },
-        ],
-      });
-      navigator.clipboard.writeText(shareUrl);
-    } else {
-      navigator.clipboard.writeText(shareUrl);
-      alert('Share link copied to clipboard!');
     }
   };
 
@@ -107,8 +77,6 @@ export function ShoppingListGrid() {
                 isSingleList={state.lists.length === 1}
                 onSelect={(id) => navigate(`/list/${id}`)}
                 onDelete={handleDeleteList}
-                onShare={handleShareList}
-                onToggleDefault={handleToggleDefault}
               />
             ))}
           </div>

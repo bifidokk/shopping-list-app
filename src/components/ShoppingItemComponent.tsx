@@ -11,13 +11,13 @@ interface ShoppingItemComponentProps {
 }
 
 export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemComponentProps) => {
-  const { updateItem, deleteItem } = useShoppingList();
+  const { updateItem, deleteItem, toggleItem } = useShoppingList();
   const { impact, notification } = useTelegramHaptics();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
 
   const handleToggleComplete = () => {
-    updateItem(listId, item.id, { completed: !item.completed });
+    toggleItem(listId, item.id);
     impact('light');
     if (!item.completed) {
       notification('success');

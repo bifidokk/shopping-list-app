@@ -20,19 +20,8 @@ export interface UpdateItemRequest {
   completed?: boolean;
 }
 
-export interface ListsResponse {
-  lists: ShoppingList[];
-}
-
-export interface ListResponse {
-  list: ShoppingList;
-}
-
-export interface ItemResponse {
-  item: ShoppingItem;
-}
-
-export interface ShareListResponse {
-  shareUrl: string;
-  shareId: string;
-}
+// Backend returns plain types directly (not wrapped in objects)
+export type ListsResponse = ShoppingList[];
+export type ListResponse = ShoppingList;
+export type ItemResponse = ShoppingItem;
+export type ItemsResponse = ShoppingItem[];

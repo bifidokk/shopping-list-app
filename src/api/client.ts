@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 class ApiError extends Error {
   status: number;
@@ -16,6 +16,14 @@ class ApiError extends Error {
   }
 }
 
+function getTelegramInitData(): string {
+  // Get Telegram init data from window.Telegram.WebApp
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    return window.Telegram.WebApp.initData;
+  }
+  return '';
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -26,6 +34,7 @@ async function request<T>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'X-Telegram-Init-Data': getTelegramInitData(),
       ...options.headers,
     },
   };
