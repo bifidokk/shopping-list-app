@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { ShoppingItemComponent } from './ShoppingItemComponent';
@@ -7,11 +7,17 @@ import { AddItemForm } from './AddItemForm';
 export function ShoppingListView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { state, deleteList, updateList } = useShoppingList();
+  const { state, deleteList, updateList, fetchListItems } = useShoppingList();
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
 
   const activeList = state.lists.find(list => list.id === Number(id));
+
+  useEffect(() => {
+    if (id) {
+      fetchListItems(Number(id));
+    }
+  }, [id, fetchListItems]);
 
   if (!activeList) {
     return (

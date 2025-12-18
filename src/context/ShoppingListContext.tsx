@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import type { ShoppingList, ShoppingItem } from '../types';
 import { shoppingListsApi } from '../api/shopping-lists';
 import { ApiError } from '../api/client';
@@ -15,6 +15,7 @@ type ShoppingListAction =
   | { type: 'UPDATE_LIST'; payload: { id: number; updates: Partial<ShoppingList> } }
   | { type: 'DELETE_LIST'; payload: number }
   | { type: 'TOGGLE_DEFAULT'; payload: number }
+  | { type: 'SET_LIST_ITEMS'; payload: { listId: number; items: ShoppingItem[] } }
   | { type: 'ADD_ITEM'; payload: { listId: number; item: ShoppingItem } }
   | { type: 'UPDATE_ITEM'; payload: { listId: number; itemId: number; updates: Partial<ShoppingItem> } }
   | { type: 'DELETE_ITEM'; payload: { listId: number; itemId: number } }
@@ -58,6 +59,16 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
           list.id === action.payload
             ? { ...list, isDefault: !list.isDefault }
             : { ...list, isDefault: false }
+        ),
+      };
+
+    case 'SET_LIST_ITEMS':
+      return {
+        ...state,
+        lists: state.lists.map(list =>
+          list.id === action.payload.listId
+            ? { ...list, items: action.payload.items }
+            : list
         ),
       };
 
@@ -124,6 +135,7 @@ interface ShoppingListContextValue {
   deleteItem: (listId: number, itemId: number) => Promise<void>;
   toggleItem: (listId: number, itemId: number) => Promise<void>;
   refreshLists: () => Promise<void>;
+  fetchListItems: (listId: number) => Promise<void>;
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
@@ -164,6 +176,23 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
+
+  const fetchListItems = useCallback(async (listId: number) => {
+    try {
+      const response = await shoppingListsApi.getItems(listId);
+      // Backend returns plain array directly
+      const items = response.map((item) => ({
+        ...item,
+        createdAt: new Date(item.createdAt),
+      }));
+      dispatch({ type: 'SET_LIST_ITEMS', payload: { listId, items } });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to load items';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to load items:', error);
+      throw error;
+    }
+  }, []);
 
   useEffect(() => {
     refreshLists();
@@ -276,6 +305,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     deleteItem,
     toggleItem,
     refreshLists,
+    fetchListItems,
   };
 
   return (
