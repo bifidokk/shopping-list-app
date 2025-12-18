@@ -245,6 +245,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Failed to delete list';
       dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to delete list:', error);
       throw error;
     }
   };

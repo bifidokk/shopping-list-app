@@ -27,31 +27,41 @@ export function ShoppingListView() {
     );
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.showPopup({
         title: 'Delete List',
         message: 'Are you sure you want to delete this shopping list?',
         buttons: [
           {
+            id: 'delete',
             type: 'destructive',
             text: 'Delete',
           },
           {
+            id: 'cancel',
             type: 'cancel',
             text: 'Cancel',
           },
         ],
-      }, (buttonId) => {
-        if (buttonId === 'destructive') {
-          deleteList(activeList.id);
-          navigate('/');
+      }, async (buttonId) => {
+        if (buttonId === 'delete') {
+          try {
+            await deleteList(activeList.id);
+            navigate('/');
+          } catch (error) {
+            console.error('Failed to delete list:', error);
+          }
         }
       });
     } else {
       if (confirm('Are you sure you want to delete this shopping list?')) {
-        deleteList(activeList.id);
-        navigate('/');
+        try {
+          await deleteList(activeList.id);
+          navigate('/');
+        } catch (error) {
+          console.error('Failed to delete list:', error);
+        }
       }
     }
   };
