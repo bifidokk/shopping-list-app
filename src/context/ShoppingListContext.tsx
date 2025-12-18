@@ -158,12 +158,13 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     try {
       const response = await shoppingListsApi.getLists();
       // Backend returns plain array directly
-      const lists = response.map((list) => ({
+      const lists = response.map((list: any) => ({
         ...list,
         createdAt: new Date(list.createdAt),
         updatedAt: new Date(list.updatedAt),
-        items: (list.items || []).map((item) => ({
+        items: (list.items || []).map((item: any) => ({
           ...item,
+          completed: item.isDone ?? item.completed ?? false,
           createdAt: new Date(item.createdAt),
         })),
       }));
@@ -181,8 +182,9 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     try {
       const response = await shoppingListsApi.getItems(listId);
       // Backend returns plain array directly
-      const items = response.map((item) => ({
+      const items = response.map((item: any) => ({
         ...item,
+        completed: item.isDone ?? item.completed ?? false,
         createdAt: new Date(item.createdAt),
       }));
       dispatch({ type: 'SET_LIST_ITEMS', payload: { listId, items } });
@@ -206,8 +208,9 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         ...response,
         createdAt: new Date(response.createdAt),
         updatedAt: new Date(response.updatedAt),
-        items: (response.items || []).map((item) => ({
+        items: (response.items || []).map((item: any) => ({
           ...item,
+          completed: item.isDone ?? item.completed ?? false,
           createdAt: new Date(item.createdAt),
         })),
       };
@@ -243,10 +246,11 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
 
   const toggleItem = async (listId: number, itemId: number) => {
     try {
-      const response = await shoppingListsApi.toggleItem(listId, itemId);
+      const response: any = await shoppingListsApi.toggleItem(listId, itemId);
       // Backend returns plain object directly
       const item = {
         ...response,
+        completed: response.isDone ?? response.completed ?? false,
         createdAt: new Date(response.createdAt),
       };
       dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: item.completed } } });
@@ -259,10 +263,11 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
 
   const addItem = async (listId: number, name: string) => {
     try {
-      const response = await shoppingListsApi.addItem(listId, { name });
+      const response: any = await shoppingListsApi.addItem(listId, { name });
       // Backend returns plain object directly
       const item = {
         ...response,
+        completed: response.isDone ?? response.completed ?? false,
         createdAt: new Date(response.createdAt),
       };
       dispatch({ type: 'ADD_ITEM', payload: { listId, item } });
