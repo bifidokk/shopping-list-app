@@ -204,6 +204,19 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const addList = async (name: string) => {
+    // Optimistic update: create temporary list with negative ID
+    const tempId = -Date.now();
+    const tempList = {
+      id: tempId,
+      name,
+      items: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Immediately add to UI
+    dispatch({ type: 'ADD_LIST', payload: tempList });
+
     try {
       const response: any = await shoppingListsApi.createList({ name });
       // Backend returns plain object directly
@@ -219,30 +232,61 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
           createdAt: new Date(item.createdAt),
         })),
       };
+
+      // Replace temporary list with real list from server
+      dispatch({ type: 'DELETE_LIST', payload: tempId });
       dispatch({ type: 'ADD_LIST', payload: list });
     } catch (error) {
+      // Rollback: remove temporary list
+      dispatch({ type: 'DELETE_LIST', payload: tempId });
       const message = error instanceof ApiError ? error.message : 'Failed to create list';
       dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to create list:', error);
       throw error;
     }
   };
 
   const updateList = async (id: number, updates: Partial<ShoppingList>) => {
+    // Optimistic update: save previous state
+    const list = state.lists.find(l => l.id === id);
+    if (!list) {
+      console.error('List not found');
+      return;
+    }
+
+    const previousList = { ...list };
+
+    // Immediately update UI
+    dispatch({ type: 'UPDATE_LIST', payload: { id, updates } });
+
     try {
       await shoppingListsApi.updateList(id, updates);
-      dispatch({ type: 'UPDATE_LIST', payload: { id, updates } });
     } catch (error) {
+      // Rollback: restore previous state
+      dispatch({ type: 'UPDATE_LIST', payload: { id, updates: previousList } });
       const message = error instanceof ApiError ? error.message : 'Failed to update list';
       dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to update list:', error);
       throw error;
     }
   };
 
   const deleteList = async (id: number) => {
+    // Optimistic update: save the list before deleting
+    const listToDelete = state.lists.find(list => list.id === id);
+    if (!listToDelete) {
+      console.error('List not found');
+      return;
+    }
+
+    // Immediately update UI
+    dispatch({ type: 'DELETE_LIST', payload: id });
+
     try {
       await shoppingListsApi.deleteList(id);
-      dispatch({ type: 'DELETE_LIST', payload: id });
     } catch (error) {
+      // Rollback: restore the deleted list
+      dispatch({ type: 'ADD_LIST', payload: listToDelete });
       const message = error instanceof ApiError ? error.message : 'Failed to delete list';
       dispatch({ type: 'SET_ERROR', payload: message });
       console.error('Failed to delete list:', error);
@@ -251,24 +295,54 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   };
 
   const toggleItem = async (listId: number, itemId: number) => {
+    // Optimistic update: get current state and toggle it
+    const list = state.lists.find(l => l.id === listId);
+    const item = list?.items.find(i => i.id === itemId);
+    if (!item) {
+      console.error('Item not found');
+      return;
+    }
+
+    const previousCompleted = item.completed;
+    const newCompleted = !previousCompleted;
+
+    // Immediately update UI
+    dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: newCompleted } } });
+
     try {
       const response: any = await shoppingListsApi.toggleItem(listId, itemId);
       // Backend returns plain object directly
-      const item = {
+      const updatedItem = {
         ...response,
         id: Number(response.id),
         completed: response.isDone ?? response.completed ?? false,
         createdAt: new Date(response.createdAt),
       };
-      dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: item.completed } } });
+      // Update with server response to ensure sync
+      dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: updatedItem.completed } } });
     } catch (error) {
+      // Rollback: restore previous state
+      dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: previousCompleted } } });
       const message = error instanceof ApiError ? error.message : 'Failed to toggle item';
       dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to toggle item:', error);
       throw error;
     }
   };
 
   const addItem = async (listId: number, name: string) => {
+    // Optimistic update: create temporary item with negative ID
+    const tempId = -Date.now(); // Temporary negative ID
+    const tempItem = {
+      id: tempId,
+      name,
+      completed: false,
+      createdAt: new Date(),
+    };
+
+    // Immediately add to UI
+    dispatch({ type: 'ADD_ITEM', payload: { listId, item: tempItem } });
+
     try {
       const response: any = await shoppingListsApi.addItem(listId, { name });
       // Backend returns plain object directly
@@ -278,30 +352,63 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         completed: response.isDone ?? response.completed ?? false,
         createdAt: new Date(response.createdAt),
       };
+
+      // Replace temporary item with real item from server
+      dispatch({ type: 'DELETE_ITEM', payload: { listId, itemId: tempId } });
       dispatch({ type: 'ADD_ITEM', payload: { listId, item } });
     } catch (error) {
+      // Rollback: remove temporary item
+      dispatch({ type: 'DELETE_ITEM', payload: { listId, itemId: tempId } });
       const message = error instanceof ApiError ? error.message : 'Failed to add item';
       dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to add item:', error);
       throw error;
     }
   };
 
   const updateItem = async (listId: number, itemId: number, updates: Partial<ShoppingItem>) => {
+    // Optimistic update: save previous state
+    const list = state.lists.find(l => l.id === listId);
+    const item = list?.items.find(i => i.id === itemId);
+    if (!item) {
+      console.error('Item not found');
+      return;
+    }
+
+    const previousItem = { ...item };
+
+    // Immediately update UI
+    dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates } });
+
     try {
       await shoppingListsApi.updateItem(listId, itemId, updates);
-      dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates } });
     } catch (error) {
+      // Rollback: restore previous state
+      dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: previousItem } });
       const message = error instanceof ApiError ? error.message : 'Failed to update item';
       dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to update item:', error);
       throw error;
     }
   };
 
   const deleteItem = async (listId: number, itemId: number) => {
+    // Optimistic update: save the item before deleting
+    const list = state.lists.find(l => l.id === listId);
+    const itemToDelete = list?.items.find(item => item.id === itemId);
+    if (!itemToDelete) {
+      console.error('Item not found');
+      return;
+    }
+
+    // Immediately update UI
+    dispatch({ type: 'DELETE_ITEM', payload: { listId, itemId } });
+
     try {
       await shoppingListsApi.deleteItem(listId, itemId);
-      dispatch({ type: 'DELETE_ITEM', payload: { listId, itemId } });
     } catch (error) {
+      // Rollback: restore the deleted item
+      dispatch({ type: 'ADD_ITEM', payload: { listId, item: itemToDelete } });
       const message = error instanceof ApiError ? error.message : 'Failed to delete item';
       dispatch({ type: 'SET_ERROR', payload: message });
       console.error('Failed to delete item:', error);
