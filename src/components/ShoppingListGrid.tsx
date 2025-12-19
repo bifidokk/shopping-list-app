@@ -7,12 +7,27 @@ import { EmptyState } from './EmptyState';
 
 export function ShoppingListGrid() {
   const navigate = useNavigate();
-  const { state, addList, deleteList } = useShoppingList();
+  const { state, addList, deleteList, setDefaultList } = useShoppingList();
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleAddList = (name: string) => {
     addList(name);
     setShowAddForm(false);
+  };
+
+  const handleToggleDefault = async (listId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const list = state.lists.find(l => l.id === listId);
+    if (!list) return;
+
+    // Only call API if setting as default (not unsetting)
+    if (!list.isDefault) {
+      try {
+        await setDefaultList(listId);
+      } catch (error) {
+        console.error('Failed to set default list:', error);
+      }
+    }
   };
 
   const handleDeleteList = async (listId: number, e: React.MouseEvent) => {
@@ -79,16 +94,24 @@ export function ShoppingListGrid() {
           !showAddForm && <EmptyState onCreateFirst={() => setShowAddForm(true)} />
         ) : (
           <div className="space-y-0">
-            {state.lists.map((list, index) => (
-              <ShoppingListItem
-                key={list.id}
-                list={list}
-                isLast={index === state.lists.length - 1}
-                isSingleList={state.lists.length === 1}
-                onSelect={(id) => navigate(`/list/${id}`)}
-                onDelete={handleDeleteList}
-              />
-            ))}
+            {[...state.lists]
+              .sort((a, b) => {
+                // Sort default list to the top
+                if (a.isDefault && !b.isDefault) return -1;
+                if (!a.isDefault && b.isDefault) return 1;
+                return 0;
+              })
+              .map((list, index, sortedArray) => (
+                <ShoppingListItem
+                  key={list.id}
+                  list={list}
+                  isLast={index === sortedArray.length - 1}
+                  isSingleList={sortedArray.length === 1}
+                  onSelect={(id) => navigate(`/list/${id}`)}
+                  onDelete={handleDeleteList}
+                  onToggleDefault={handleToggleDefault}
+                />
+              ))}
           </div>
         )}
 

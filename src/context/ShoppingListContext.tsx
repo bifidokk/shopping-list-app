@@ -153,6 +153,7 @@ interface ShoppingListContextValue {
   addList: (name: string) => Promise<void>;
   updateList: (id: number, updates: Partial<ShoppingList>) => Promise<void>;
   deleteList: (id: number) => Promise<void>;
+  setDefaultList: (id: number) => Promise<void>;
   addItem: (listId: number, name: string) => Promise<void>;
   updateItem: (listId: number, itemId: number, updates: Partial<ShoppingItem>) => Promise<void>;
   deleteItem: (listId: number, itemId: number) => Promise<void>;
@@ -291,6 +292,31 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       const message = error instanceof ApiError ? error.message : 'Failed to update list';
       dispatch({ type: 'SET_ERROR', payload: message });
       console.error('Failed to update list:', error);
+      throw error;
+    }
+  };
+
+  const setDefaultList = async (id: number) => {
+    // Optimistic update: save previous default state
+    const previousDefaults = state.lists
+      .filter(list => list.isDefault)
+      .map(list => list.id);
+
+    // Immediately update UI - toggle default for this list, unset others
+    dispatch({ type: 'TOGGLE_DEFAULT', payload: id });
+
+    try {
+      await shoppingListsApi.setDefaultList(id);
+    } catch (error) {
+      // Rollback: restore previous default states
+      previousDefaults.forEach(listId => {
+        dispatch({ type: 'UPDATE_LIST', payload: { id: listId, updates: { isDefault: true } } });
+      });
+      dispatch({ type: 'UPDATE_LIST', payload: { id, updates: { isDefault: false } } });
+
+      const message = error instanceof ApiError ? error.message : 'Failed to set default list';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to set default list:', error);
       throw error;
     }
   };
@@ -445,6 +471,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     addList,
     updateList,
     deleteList,
+    setDefaultList,
     addItem,
     updateItem,
     deleteItem,

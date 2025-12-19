@@ -1,6 +1,6 @@
 import React from 'react';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
-import { DotsVerticalIcon, TrashIcon } from '@radix-ui/react-icons';
+import { DotsVerticalIcon, TrashIcon, StarIcon, StarFilledIcon } from '@radix-ui/react-icons';
 import type { ShoppingList } from '../types';
 
 interface ShoppingListItemProps {
@@ -9,9 +9,10 @@ interface ShoppingListItemProps {
   isSingleList: boolean;
   onSelect: (id: number) => void;
   onDelete: (id: number, e: React.MouseEvent) => void;
+  onToggleDefault: (id: number, e: React.MouseEvent) => void;
 }
 
-export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete }: ShoppingListItemProps) => {
+export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete, onToggleDefault }: ShoppingListItemProps) => {
   // Use counts from backend if available, otherwise calculate from items
   const completedCount = list.completedItems ?? list.items.filter(item => item.completed).length;
   const totalCount = list.totalItems ?? list.items.length;
@@ -33,6 +34,12 @@ export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete }
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-gray-900 text-lg truncate">{list.name}</h3>
+            {list.isDefault && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full flex-shrink-0">
+                <StarFilledIcon className="w-3 h-3" />
+                <span>Default</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4 mt-1">
@@ -80,6 +87,17 @@ export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete }
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
+            {!list.isDefault && (
+              <>
+                <DropdownMenu.Item onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleDefault(list.id, e as unknown as React.MouseEvent);
+                }}>
+                  <StarIcon /> Set as default
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator />
+              </>
+            )}
             <DropdownMenu.Item color="red" onClick={(e) => {
               e.stopPropagation();
               onDelete(list.id, e as unknown as React.MouseEvent);

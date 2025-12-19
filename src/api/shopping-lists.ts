@@ -27,6 +27,9 @@ export const shoppingListsApi = {
   deleteList: (id: number) =>
     apiClient.delete<void>(`/api/shopping-lists/${id}`),
 
+  setDefaultList: (id: number) =>
+    apiClient.post<ListResponse>(`/api/shopping-lists/${id}/set-default`),
+
   // Items endpoints
   getItems: (listId: number) =>
     apiClient.get<ItemsResponse>(`/api/shopping-lists/${listId}/items`),

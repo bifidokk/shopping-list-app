@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { ShoppingItemComponent } from './ShoppingItemComponent';
 import { AddItemForm } from './AddItemForm';
+import { StarFilledIcon } from '@radix-ui/react-icons';
 
 export function ShoppingListView() {
   const { id } = useParams<{ id: string }>();
@@ -122,12 +123,20 @@ export function ShoppingListView() {
             </button>
           </div>
         ) : (
-          <h1
-            onClick={handleEditName}
-            className="text-xl font-bold text-gray-900 cursor-pointer hover:text-blue-500"
-          >
-            {activeList.name}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1
+              onClick={handleEditName}
+              className="text-xl font-bold text-gray-900 cursor-pointer hover:text-blue-500"
+            >
+              {activeList.name}
+            </h1>
+            {activeList.isDefault && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full flex-shrink-0">
+                <StarFilledIcon className="w-3 h-3" />
+                <span>Default</span>
+              </div>
+            )}
+          </div>
         )}
 
         <div className="text-sm text-gray-500 mt-1">
