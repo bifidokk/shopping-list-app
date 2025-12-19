@@ -12,8 +12,9 @@ interface ShoppingListItemProps {
 }
 
 export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete }: ShoppingListItemProps) => {
-  const completedCount = list.items.filter(item => item.completed).length;
-  const totalCount = list.items.length;
+  // Use counts from backend if available, otherwise calculate from items
+  const completedCount = list.completedItems ?? list.items.filter(item => item.completed).length;
+  const totalCount = list.totalItems ?? list.items.length;
 
   return (
     <div

@@ -65,53 +65,76 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
     case 'SET_LIST_ITEMS':
       return {
         ...state,
-        lists: state.lists.map(list =>
-          list.id === action.payload.listId
-            ? { ...list, items: action.payload.items }
-            : list
-        ),
+        lists: state.lists.map(list => {
+          if (list.id === action.payload.listId) {
+            const newItems = action.payload.items;
+            return {
+              ...list,
+              items: newItems,
+              totalItems: newItems.length,
+              completedItems: newItems.filter(item => item.completed).length,
+            };
+          }
+          return list;
+        }),
       };
 
     case 'ADD_ITEM':
       return {
         ...state,
-        lists: state.lists.map(list =>
-          list.id === action.payload.listId
-            ? { ...list, items: [...list.items, action.payload.item], updatedAt: new Date() }
-            : list
-        ),
+        lists: state.lists.map(list => {
+          if (list.id === action.payload.listId) {
+            const newItems = [...list.items, action.payload.item];
+            return {
+              ...list,
+              items: newItems,
+              totalItems: newItems.length,
+              completedItems: newItems.filter(item => item.completed).length,
+              updatedAt: new Date(),
+            };
+          }
+          return list;
+        }),
       };
 
     case 'UPDATE_ITEM':
       return {
         ...state,
-        lists: state.lists.map(list =>
-          list.id === action.payload.listId
-            ? {
-                ...list,
-                items: list.items.map(item =>
-                  item.id === action.payload.itemId
-                    ? { ...item, ...action.payload.updates }
-                    : item
-                ),
-                updatedAt: new Date(),
-              }
-            : list
-        ),
+        lists: state.lists.map(list => {
+          if (list.id === action.payload.listId) {
+            const newItems = list.items.map(item =>
+              item.id === action.payload.itemId
+                ? { ...item, ...action.payload.updates }
+                : item
+            );
+            return {
+              ...list,
+              items: newItems,
+              totalItems: newItems.length,
+              completedItems: newItems.filter(item => item.completed).length,
+              updatedAt: new Date(),
+            };
+          }
+          return list;
+        }),
       };
 
     case 'DELETE_ITEM':
       return {
         ...state,
-        lists: state.lists.map(list =>
-          list.id === action.payload.listId
-            ? {
-                ...list,
-                items: list.items.filter(item => item.id !== action.payload.itemId),
-                updatedAt: new Date(),
-              }
-            : list
-        ),
+        lists: state.lists.map(list => {
+          if (list.id === action.payload.listId) {
+            const newItems = list.items.filter(item => item.id !== action.payload.itemId);
+            return {
+              ...list,
+              items: newItems,
+              totalItems: newItems.length,
+              completedItems: newItems.filter(item => item.completed).length,
+              updatedAt: new Date(),
+            };
+          }
+          return list;
+        }),
       };
 
     case 'SET_LOADING':
@@ -157,18 +180,17 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'SET_ERROR', payload: null });
     try {
       const response = await shoppingListsApi.getLists();
-      // Backend returns plain array directly
+      // Backend returns plain array with summary data (totalItems, completedItems)
       const lists = response.map((list: any) => ({
         ...list,
         id: Number(list.id),
         createdAt: new Date(list.createdAt),
         updatedAt: new Date(list.updatedAt),
-        items: (list.items || []).map((item: any) => ({
-          ...item,
-          id: Number(item.id),
-          completed: item.isDone ?? item.completed ?? false,
-          createdAt: new Date(item.createdAt),
-        })),
+        // Items are fetched separately, initialize as empty array
+        items: [],
+        // Keep counts from backend
+        totalItems: list.totalItems ?? 0,
+        completedItems: list.completedItems ?? 0,
       }));
       dispatch({ type: 'SET_LISTS', payload: lists });
     } catch (error) {
@@ -190,6 +212,8 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         completed: item.isDone ?? item.completed ?? false,
         createdAt: new Date(item.createdAt),
       }));
+
+      // SET_LIST_ITEMS will automatically update totalItems and completedItems
       dispatch({ type: 'SET_LIST_ITEMS', payload: { listId, items } });
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Failed to load items';
