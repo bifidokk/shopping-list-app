@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { ShoppingItemComponent } from './ShoppingItemComponent';
 import { AddItemForm } from './AddItemForm';
-import { StarFilledIcon } from '@radix-ui/react-icons';
+import { StarFilledIcon, Share2Icon } from '@radix-ui/react-icons';
+import { ShareListDialog } from './ShareListDialog';
 
 export function ShoppingListView() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,7 @@ export function ShoppingListView() {
   const { state, deleteList, updateList, fetchListItems } = useShoppingList();
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const activeList = state.lists.find(list => list.id === Number(id));
 
@@ -92,12 +94,25 @@ export function ShoppingListView() {
           >
             ← Back
           </button>
-          <button
-            onClick={handleDelete}
-            className="text-red-500 font-medium"
-          >
-            Delete
-          </button>
+          <div className="flex items-center gap-3">
+            {(activeList.isOwner ?? true) && (
+              <button
+                onClick={() => setShareDialogOpen(true)}
+                className="flex items-center gap-1.5 text-blue-500 font-medium hover:text-blue-600"
+              >
+                <Share2Icon className="w-4 h-4" />
+                Share
+              </button>
+            )}
+            {(activeList.isOwner ?? true) && (
+              <button
+                onClick={handleDelete}
+                className="text-red-500 font-medium hover:text-red-600"
+              >
+                Delete
+              </button>
+            )}
+          </div>
         </div>
 
         {editingName ? (
@@ -187,6 +202,12 @@ export function ShoppingListView() {
           </div>
         </div>
       </div>
+
+      <ShareListDialog
+        list={activeList}
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+      />
     </div>
   );
 }

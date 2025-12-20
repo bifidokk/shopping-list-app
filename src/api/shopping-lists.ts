@@ -4,10 +4,13 @@ import type {
   UpdateListRequest,
   CreateItemRequest,
   UpdateItemRequest,
+  CreateShareRequest,
   ListsResponse,
   ListResponse,
   ItemResponse,
   ItemsResponse,
+  ShareResponse,
+  SharesResponse,
 } from './types';
 
 export const shoppingListsApi = {
@@ -29,6 +32,16 @@ export const shoppingListsApi = {
 
   setDefaultList: (id: number) =>
     apiClient.post<ListResponse>(`/api/shopping-lists/${id}/set-default`),
+
+  // Sharing endpoints
+  shareList: (listId: number, data: CreateShareRequest) =>
+    apiClient.post<ShareResponse>(`/api/shopping-lists/${listId}/shares`, data),
+
+  getListShares: (listId: number) =>
+    apiClient.get<SharesResponse>(`/api/shopping-lists/${listId}/shares`),
+
+  removeShare: (listId: number, userId: number) =>
+    apiClient.delete<void>(`/api/shopping-lists/${listId}/shares/${userId}`),
 
   // Items endpoints
   getItems: (listId: number) =>

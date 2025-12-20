@@ -1,4 +1,4 @@
-import type { ShoppingList, ShoppingItem } from '../types';
+import type { ShoppingList, ShoppingItem, ListShare } from '../types';
 
 export interface CreateListRequest {
   name: string;
@@ -20,8 +20,14 @@ export interface UpdateItemRequest {
   completed?: boolean;
 }
 
+export interface CreateShareRequest {
+  telegramUsername: string;
+}
+
 // Backend returns plain types directly (not wrapped in objects)
 export type ListsResponse = ShoppingList[];
 export type ListResponse = ShoppingList;
 export type ItemResponse = ShoppingItem;
 export type ItemsResponse = ShoppingItem[];
+export type ShareResponse = ListShare;
+export type SharesResponse = ListShare[];

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import type { ShoppingList, ShoppingItem } from '../types';
+import type { ShoppingList, ShoppingItem, ListShare } from '../types';
 import { shoppingListsApi } from '../api/shopping-lists';
 import { ApiError } from '../api/client';
 
@@ -19,6 +19,9 @@ type ShoppingListAction =
   | { type: 'ADD_ITEM'; payload: { listId: number; item: ShoppingItem } }
   | { type: 'UPDATE_ITEM'; payload: { listId: number; itemId: number; updates: Partial<ShoppingItem> } }
   | { type: 'DELETE_ITEM'; payload: { listId: number; itemId: number } }
+  | { type: 'SET_LIST_SHARES'; payload: { listId: number; shares: ListShare[] } }
+  | { type: 'ADD_SHARE'; payload: { listId: number; share: ListShare } }
+  | { type: 'REMOVE_SHARE'; payload: { listId: number; userId: number } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };
 
@@ -137,6 +140,53 @@ function shoppingListReducer(state: ShoppingListState, action: ShoppingListActio
         }),
       };
 
+    case 'SET_LIST_SHARES':
+      return {
+        ...state,
+        lists: state.lists.map(list => {
+          if (list.id === action.payload.listId) {
+            return {
+              ...list,
+              shares: action.payload.shares,
+              sharedWith: action.payload.shares.length,
+            };
+          }
+          return list;
+        }),
+      };
+
+    case 'ADD_SHARE':
+      return {
+        ...state,
+        lists: state.lists.map(list => {
+          if (list.id === action.payload.listId) {
+            const newShares = [...(list.shares || []), action.payload.share];
+            return {
+              ...list,
+              shares: newShares,
+              sharedWith: newShares.length,
+            };
+          }
+          return list;
+        }),
+      };
+
+    case 'REMOVE_SHARE':
+      return {
+        ...state,
+        lists: state.lists.map(list => {
+          if (list.id === action.payload.listId) {
+            const newShares = (list.shares || []).filter(share => share.sharedWithUserId !== action.payload.userId);
+            return {
+              ...list,
+              shares: newShares,
+              sharedWith: newShares.length,
+            };
+          }
+          return list;
+        }),
+      };
+
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
 
@@ -160,6 +210,9 @@ interface ShoppingListContextValue {
   toggleItem: (listId: number, itemId: number) => Promise<void>;
   refreshLists: () => Promise<void>;
   fetchListItems: (listId: number) => Promise<void>;
+  shareList: (listId: number, telegramUsername: string) => Promise<void>;
+  fetchListShares: (listId: number) => Promise<void>;
+  removeShare: (listId: number, userId: number) => Promise<void>;
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
@@ -466,6 +519,90 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     }
   };
 
+  const fetchListShares = useCallback(async (listId: number) => {
+    try {
+      const response = await shoppingListsApi.getListShares(listId);
+      const shares = response.map((share: any) => ({
+        ...share,
+        id: Number(share.id),
+        listId: Number(share.listId),
+        ownerId: Number(share.ownerId),
+        sharedWithUserId: Number(share.sharedWithUserId),
+        createdAt: new Date(share.createdAt),
+      }));
+
+      dispatch({ type: 'SET_LIST_SHARES', payload: { listId, shares } });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Failed to load shares';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to load shares:', error);
+      throw error;
+    }
+  }, []);
+
+  const shareList = async (listId: number, telegramUsername: string) => {
+    // Optimistic update: create temporary share with negative ID
+    const tempId = -Date.now();
+    const tempShare: ListShare = {
+      id: tempId,
+      listId,
+      ownerId: 0, // Will be filled by backend
+      sharedWithUserId: 0, // Will be filled by backend
+      sharedWithUsername: telegramUsername,
+      createdAt: new Date(),
+    };
+
+    // Immediately add to UI
+    dispatch({ type: 'ADD_SHARE', payload: { listId, share: tempShare } });
+
+    try {
+      const response: any = await shoppingListsApi.shareList(listId, { telegramUsername });
+      const share: ListShare = {
+        ...response,
+        id: Number(response.id),
+        listId: Number(response.listId),
+        ownerId: Number(response.ownerId),
+        sharedWithUserId: Number(response.sharedWithUserId),
+        createdAt: new Date(response.createdAt),
+      };
+
+      // Replace temporary share with real share from server
+      dispatch({ type: 'REMOVE_SHARE', payload: { listId, userId: 0 } }); // Remove temp (userId 0)
+      dispatch({ type: 'ADD_SHARE', payload: { listId, share } });
+    } catch (error) {
+      // Rollback: remove temporary share
+      dispatch({ type: 'REMOVE_SHARE', payload: { listId, userId: 0 } });
+      const message = error instanceof ApiError ? error.message : 'Failed to share list';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to share list:', error);
+      throw error;
+    }
+  };
+
+  const removeShare = async (listId: number, userId: number) => {
+    // Optimistic update: save the share before removing
+    const list = state.lists.find(l => l.id === listId);
+    const shareToRemove = list?.shares?.find(share => share.sharedWithUserId === userId);
+    if (!shareToRemove) {
+      console.error('Share not found');
+      return;
+    }
+
+    // Immediately update UI
+    dispatch({ type: 'REMOVE_SHARE', payload: { listId, userId } });
+
+    try {
+      await shoppingListsApi.removeShare(listId, userId);
+    } catch (error) {
+      // Rollback: restore the removed share
+      dispatch({ type: 'ADD_SHARE', payload: { listId, share: shareToRemove } });
+      const message = error instanceof ApiError ? error.message : 'Failed to remove share';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      console.error('Failed to remove share:', error);
+      throw error;
+    }
+  };
+
   const value: ShoppingListContextValue = {
     state,
     addList,
@@ -478,6 +615,9 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     toggleItem,
     refreshLists,
     fetchListItems,
+    shareList,
+    fetchListShares,
+    removeShare,
   };
 
   return (

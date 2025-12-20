@@ -5,6 +5,17 @@ export interface ShoppingItem {
   createdAt: Date;
 }
 
+export interface ListShare {
+  id: number;
+  listId: number;
+  ownerId: number;
+  sharedWithUserId: number;
+  sharedWithUsername?: string;
+  sharedWithFirstName?: string;
+  sharedWithLastName?: string;
+  createdAt: Date;
+}
+
 export interface ShoppingList {
   id: number;
   name: string;
@@ -16,5 +27,8 @@ export interface ShoppingList {
   updatedAt: Date;
   shareId?: string;
   isDefault?: boolean;
+  ownerId?: number;
+  isOwner?: boolean;
   sharedWith?: number;
+  shares?: ListShare[];
 }
