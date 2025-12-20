@@ -31,6 +31,12 @@ export function ShoppingListView() {
   }
 
   const handleDelete = async () => {
+    // Only allow owner to delete
+    if (!activeList.isOwner) {
+      console.error('Only the owner can delete this list');
+      return;
+    }
+
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.showPopup({
         title: 'Delete List',
@@ -95,7 +101,7 @@ export function ShoppingListView() {
             ← Back
           </button>
           <div className="flex items-center gap-3">
-            {(activeList.isOwner ?? true) && (
+            {activeList.isOwner && (
               <button
                 onClick={() => setShareDialogOpen(true)}
                 className="flex items-center gap-1.5 text-blue-500 font-medium hover:text-blue-600"
@@ -104,7 +110,7 @@ export function ShoppingListView() {
                 Share
               </button>
             )}
-            {(activeList.isOwner ?? true) && (
+            {activeList.isOwner && (
               <button
                 onClick={handleDelete}
                 className="text-red-500 font-medium hover:text-red-600"

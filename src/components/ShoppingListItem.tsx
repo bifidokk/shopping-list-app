@@ -46,7 +46,7 @@ export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete, 
             <span className="text-sm text-gray-500">
               {completedCount}/{totalCount} items
             </span>
-            {list.sharedWith && list.sharedWith > 0 && (
+            {(list.sharedWith ?? 0) > 0 && (
               <div className="flex items-center gap-1 text-sm text-gray-500">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
@@ -75,37 +75,39 @@ export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete, 
         <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"/>
         </svg>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            <IconButton
-              variant="ghost"
-              color="gray"
-              size="2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DotsVerticalIcon />
-            </IconButton>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content>
-            {!list.isDefault && (
-              <>
-                <DropdownMenu.Item onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleDefault(list.id, e as unknown as React.MouseEvent);
-                }}>
-                  <StarIcon /> Set as default
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator />
-              </>
-            )}
-            <DropdownMenu.Item color="red" onClick={(e) => {
-              e.stopPropagation();
-              onDelete(list.id, e as unknown as React.MouseEvent);
-            }}>
-              <TrashIcon /> Delete
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        {list.isOwner && (
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              <IconButton
+                variant="ghost"
+                color="gray"
+                size="2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DotsVerticalIcon />
+              </IconButton>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              {!list.isDefault && (
+                <>
+                  <DropdownMenu.Item onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleDefault(list.id, e as unknown as React.MouseEvent);
+                  }}>
+                    <StarIcon /> Set as default
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator />
+                </>
+              )}
+              <DropdownMenu.Item color="red" onClick={(e) => {
+                e.stopPropagation();
+                onDelete(list.id, e as unknown as React.MouseEvent);
+              }}>
+                <TrashIcon /> Delete
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        )}
       </div>
     </div>
   );

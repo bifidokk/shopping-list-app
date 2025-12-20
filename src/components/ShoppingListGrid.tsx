@@ -32,6 +32,14 @@ export function ShoppingListGrid() {
 
   const handleDeleteList = async (listId: number, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Check if user is the owner
+    const list = state.lists.find(l => l.id === listId);
+    if (!list?.isOwner) {
+      console.error('Only the owner can delete this list');
+      return;
+    }
+
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.showPopup({
         title: 'Delete List',
