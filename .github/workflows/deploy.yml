@@ -62,36 +62,74 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Create backup of current deployment
-            if [ -d "${{ secrets.DEPLOY_PATH }}" ]; then
-              echo "Creating backup..."
-              sudo cp -r ${{ secrets.DEPLOY_PATH }} ${{ secrets.DEPLOY_PATH }}.backup.$(date +%Y%m%d_%H%M%S)
-              # Keep only last 5 backups
-              ls -dt ${{ secrets.DEPLOY_PATH }}.backup.* 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf
+            set -e
+
+            # Check if deploy.tar.gz exists
+            if [ ! -f "/tmp/deploy.tar.gz" ]; then
+              echo "❌ Error: /tmp/deploy.tar.gz not found!"
+              exit 1
             fi
 
-            # Create deployment directory if it doesn't exist
-            sudo mkdir -p ${{ secrets.DEPLOY_PATH }}
-            sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} ${{ secrets.DEPLOY_PATH }}
+            echo "📦 Found deployment archive: $(ls -lh /tmp/deploy.tar.gz)"
+
+            # Create backup of current deployment
+            if [ -d "${{ secrets.DEPLOY_PATH }}" ] && [ "$(ls -A ${{ secrets.DEPLOY_PATH }})" ]; then
+              echo "📋 Creating backup..."
+              cp -r ${{ secrets.DEPLOY_PATH }} ${{ secrets.DEPLOY_PATH }}.backup.$(date +%Y%m%d_%H%M%S)
+              # Keep only last 5 backups
+              ls -dt ${{ secrets.DEPLOY_PATH }}.backup.* 2>/dev/null | tail -n +6 | xargs -r rm -rf
+              echo "✅ Backup created"
+            fi
+
+            # Ensure deployment directory exists with correct ownership
+            if [ ! -d "${{ secrets.DEPLOY_PATH }}" ]; then
+              echo "⚠️  Directory ${{ secrets.DEPLOY_PATH }} does not exist"
+              echo "Please run on server: sudo mkdir -p ${{ secrets.DEPLOY_PATH }} && sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} ${{ secrets.DEPLOY_PATH }}"
+              exit 1
+            fi
+
+            # Check if we have write permissions
+            if [ ! -w "${{ secrets.DEPLOY_PATH }}" ]; then
+              echo "⚠️  No write permission to ${{ secrets.DEPLOY_PATH }}"
+              echo "Please run on server: sudo chown -R ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} ${{ secrets.DEPLOY_PATH }}"
+              exit 1
+            fi
 
             # Clear old files
+            echo "🧹 Clearing old files..."
             rm -rf ${{ secrets.DEPLOY_PATH }}/*
 
             # Extract new files
+            echo "📂 Extracting files to ${{ secrets.DEPLOY_PATH }}..."
             cd ${{ secrets.DEPLOY_PATH }}
-            sudo tar -xzf /tmp/deploy.tar.gz
+            tar -xzf /tmp/deploy.tar.gz
 
-            # Set correct permissions
-            sudo chown -R www-data:www-data ${{ secrets.DEPLOY_PATH }}
-            sudo chmod -R 755 ${{ secrets.DEPLOY_PATH }}
+            # Verify extraction
+            echo "📁 Deployed files:"
+            ls -la ${{ secrets.DEPLOY_PATH }}
 
             # Cleanup
             rm /tmp/deploy.tar.gz
 
-            # Reload nginx
-            sudo systemctl reload nginx
-
             echo "✅ Deployment completed successfully!"
+            echo "📍 Files deployed to: ${{ secrets.DEPLOY_PATH }}"
+
+      - name: Set permissions and reload Nginx (requires passwordless sudo)
+        uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔐 Setting permissions..."
+            sudo chown -R www-data:www-data ${{ secrets.DEPLOY_PATH }} || echo "⚠️  Could not set www-data ownership (sudo not configured)"
+            sudo chmod -R 755 ${{ secrets.DEPLOY_PATH }} || echo "⚠️  Could not set permissions (sudo not configured)"
+
+            echo "🔄 Reloading Nginx..."
+            sudo systemctl reload nginx || echo "⚠️  Could not reload nginx (sudo not configured)"
+
+            echo "ℹ️  If you see warnings above, configure passwordless sudo following FIX-SUDO.md"
 
       - name: Cleanup local files
         if: always()
