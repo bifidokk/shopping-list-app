@@ -46,36 +46,37 @@ jobs:
           tar -czf ../deploy.tar.gz .
           cd ..
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "deploy.tar.gz"
+          target: "/tmp/"
 
-      - name: Deploy to Hetzner
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
             # Create backup of current deployment
             if [ -d "${{ secrets.DEPLOY_PATH }}" ]; then
               echo "Creating backup..."
               sudo cp -r ${{ secrets.DEPLOY_PATH }} ${{ secrets.DEPLOY_PATH }}.backup.$(date +%Y%m%d_%H%M%S)
               # Keep only last 5 backups
-              ls -dt ${{ secrets.DEPLOY_PATH }}.backup.* | tail -n +6 | xargs -r sudo rm -rf
+              ls -dt ${{ secrets.DEPLOY_PATH }}.backup.* 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf
             fi
 
             # Create deployment directory if it doesn't exist
             sudo mkdir -p ${{ secrets.DEPLOY_PATH }}
             sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} ${{ secrets.DEPLOY_PATH }}
-          EOF
 
-      - name: Upload files to server
-        run: |
-          scp -i ~/.ssh/deploy_key deploy.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
+            # Clear old files
+            rm -rf ${{ secrets.DEPLOY_PATH }}/*
 
-      - name: Extract and finalize deployment
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             # Extract new files
             cd ${{ secrets.DEPLOY_PATH }}
             sudo tar -xzf /tmp/deploy.tar.gz
@@ -90,14 +91,11 @@ jobs:
             # Reload nginx
             sudo systemctl reload nginx
 
-            echo "Deployment completed successfully!"
-          EOF
+            echo "✅ Deployment completed successfully!"
 
-      - name: Cleanup
+      - name: Cleanup local files
         if: always()
-        run: |
-          rm -f ~/.ssh/deploy_key
-          rm -f deploy.tar.gz
+        run: rm -f deploy.tar.gz
 
       - name: Deployment summary
         run: |
