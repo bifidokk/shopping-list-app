@@ -75,39 +75,39 @@ export const ShoppingListItem = React.memo(({ list, isLast, onSelect, onDelete, 
         <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"/>
         </svg>
-        {list.isOwner && (
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              <IconButton
-                variant="ghost"
-                color="gray"
-                size="2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <DotsVerticalIcon />
-              </IconButton>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              {!list.isDefault && (
-                <>
-                  <DropdownMenu.Item onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleDefault(list.id, e as unknown as React.MouseEvent);
-                  }}>
-                    <StarIcon /> Set as default
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator />
-                </>
-              )}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <IconButton
+              variant="ghost"
+              color="gray"
+              size="2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DotsVerticalIcon />
+            </IconButton>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            {!list.isDefault && (
+              <>
+                <DropdownMenu.Item onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleDefault(list.id, e as unknown as React.MouseEvent);
+                }}>
+                  <StarIcon /> Set as default
+                </DropdownMenu.Item>
+                {list.isOwner && <DropdownMenu.Separator />}
+              </>
+            )}
+            {list.isOwner && (
               <DropdownMenu.Item color="red" onClick={(e) => {
                 e.stopPropagation();
                 onDelete(list.id, e as unknown as React.MouseEvent);
               }}>
                 <TrashIcon /> Delete
               </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        )}
+            )}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
     </div>
   );

@@ -8,15 +8,15 @@ export default defineConfig({
   server: {
     allowedHosts: [
       '.ngrok-free.app',
-      '.tunnl.gg', // Allow all tunnl.gg subdomains
+      '.bifidokk.com',
     ],
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://localhost:8080',
+    //     changeOrigin: true,
+    //     secure: false,
+    //   },
+    // },
   },
 })
 
