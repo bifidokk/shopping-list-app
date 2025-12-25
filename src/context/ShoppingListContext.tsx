@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import type { ShoppingList, ShoppingItem, ListShare } from '../types';
+import type { ShoppingList, ShoppingItem, ListShare, ApiShoppingListResponse, ApiShoppingItemResponse, ApiListShareResponse } from '../types';
 import { shoppingListsApi } from '../api/shopping-lists';
 import { ApiError } from '../api/client';
 
@@ -235,7 +235,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     try {
       const response = await shoppingListsApi.getLists();
       // Backend returns plain array with summary data (totalItems, completedItems)
-      const lists = response.map((list: any) => ({
+      const lists = response.map((list: ApiShoppingListResponse) => ({
         ...list,
         id: Number(list.id),
         createdAt: new Date(list.createdAt),
@@ -260,7 +260,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     try {
       const response = await shoppingListsApi.getItems(listId);
       // Backend returns plain array directly
-      const items = response.map((item: any) => ({
+      const items = response.map((item: ApiShoppingItemResponse) => ({
         ...item,
         id: Number(item.id),
         completed: item.isDone ?? item.completed ?? false,
@@ -296,14 +296,14 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'ADD_LIST', payload: tempList });
 
     try {
-      const response: any = await shoppingListsApi.createList({ name });
+      const response = await shoppingListsApi.createList({ name }) as ApiShoppingListResponse;
       // Backend returns plain object directly
       const list = {
         ...response,
         id: Number(response.id),
         createdAt: new Date(response.createdAt),
         updatedAt: new Date(response.updatedAt),
-        items: (response.items || []).map((item: any) => ({
+        items: (response.items || []).map((item: ApiShoppingItemResponse) => ({
           ...item,
           id: Number(item.id),
           completed: item.isDone ?? item.completed ?? false,
@@ -413,7 +413,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: newCompleted } } });
 
     try {
-      const response: any = await shoppingListsApi.toggleItem(listId, itemId);
+      const response = await shoppingListsApi.toggleItem(listId, itemId) as ApiShoppingItemResponse;
       // Backend returns plain object directly
       const updatedItem = {
         ...response,
@@ -447,7 +447,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'ADD_ITEM', payload: { listId, item: tempItem } });
 
     try {
-      const response: any = await shoppingListsApi.addItem(listId, { name });
+      const response = await shoppingListsApi.addItem(listId, { name }) as ApiShoppingItemResponse;
       // Backend returns plain object directly
       const item = {
         ...response,
@@ -522,7 +522,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
   const fetchListShares = useCallback(async (listId: number) => {
     try {
       const response = await shoppingListsApi.getListShares(listId);
-      const shares = response.map((share: any) => ({
+      const shares = response.map((share: ApiListShareResponse) => ({
         ...share,
         id: Number(share.id),
         listId: Number(share.listId),
@@ -556,7 +556,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'ADD_SHARE', payload: { listId, share: tempShare } });
 
     try {
-      const response: any = await shoppingListsApi.shareList(listId, { telegramUsername });
+      const response = await shoppingListsApi.shareList(listId, { telegramUsername }) as ApiListShareResponse;
       const share: ListShare = {
         ...response,
         id: Number(response.id),
