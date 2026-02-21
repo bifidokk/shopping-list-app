@@ -1,27 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Checkbox, TextField, Button, Flex, Text, IconButton } from '@radix-ui/themes';
 import { Cross2Icon } from '@radix-ui/react-icons';
+import confetti from 'canvas-confetti';
 import { useShoppingList } from '../context/ShoppingListContext';
 import type { ShoppingItem } from '../types';
 import { useTelegramHaptics } from '../utils/telegram';
 
-const CONFETTI_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
+const DUST_COLORS = ['#d1d5db', '#9ca3af', '#6b7280', '#e5e7eb'];
 
-function generateParticles() {
-  return Array.from({ length: 12 }, (_, i) => {
-    const angle = (i / 12) * 360 + (Math.random() * 30 - 15);
-    const distance = 20 + Math.random() * 25;
-    const rad = (angle * Math.PI) / 180;
+function generateDustParticles(width: number, height: number) {
+  return Array.from({ length: 50 }, (_, i) => {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
     return {
       id: i,
-      x: Math.cos(rad) * distance,
-      y: Math.sin(rad) * distance,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      size: 3 + Math.random() * 4,
-      delay: Math.random() * 0.1,
+      x,
+      y,
+      dx: 40 + Math.random() * 100,
+      dy: (Math.random() - 0.5) * 80,
+      size: 2 + Math.random() * 4,
+      delay: (x / width) * 0.4,
+      duration: 0.4 + Math.random() * 0.4,
+      rotation: Math.random() * 90 - 45,
+      color: DUST_COLORS[Math.floor(Math.random() * DUST_COLORS.length)],
     };
   });
 }
+
+type DustParticle = ReturnType<typeof generateDustParticles>[number];
 
 interface ShoppingItemComponentProps {
   item: ShoppingItem;
@@ -33,14 +39,33 @@ export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemC
   const { impact, notification } = useTelegramHaptics();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
-  const [particles, setParticles] = useState<ReturnType<typeof generateParticles>>([]);
+  const [isDisintegrating, setIsDisintegrating] = useState(false);
+  const [dustParticles, setDustParticles] = useState<DustParticle[]>([]);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const checkboxRef = useRef<HTMLDivElement>(null);
 
   const handleToggleComplete = () => {
     if (!item.completed) {
-      setParticles(generateParticles());
+      // Fire confetti from the checkbox position
+      const el = checkboxRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const x = (rect.left + rect.width / 2) / window.innerWidth;
+        const y = (rect.top + rect.height / 2) / window.innerHeight;
+        confetti({
+          particleCount: 30,
+          spread: 60,
+          startVelocity: 20,
+          origin: { x, y },
+          colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'],
+          ticks: 60,
+          scalar: 0.7,
+          gravity: 0.8,
+          disableForReducedMotion: true,
+        });
+      }
       notification('success');
       impact('light');
-      // Delay the toggle so confetti plays before the item moves to the Completed section
       setTimeout(() => {
         toggleItem(listId, item.id);
       }, 500);
@@ -68,32 +93,51 @@ export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemC
   };
 
   const handleDelete = () => {
-    deleteItem(listId, item.id);
+    const el = rowRef.current;
+    if (!el) {
+      deleteItem(listId, item.id);
+      impact('medium');
+      return;
+    }
+
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    setDustParticles(generateDustParticles(width, height));
+    setIsDisintegrating(true);
     impact('medium');
+
+    setTimeout(() => {
+      deleteItem(listId, item.id);
+    }, 900);
   };
 
   return (
+    <div ref={rowRef} className={`relative overflow-visible ${isDisintegrating ? 'disintegrating' : ''}`}>
+      {dustParticles.map((p) => (
+        <span
+          key={p.id}
+          className="dust-particle"
+          style={{
+            '--dust-dx': `${p.dx}px`,
+            '--dust-dy': `${p.dy}px`,
+            '--dust-duration': `${p.duration}s`,
+            '--dust-delay': `${p.delay}s`,
+            '--dust-rotation': `${p.rotation}deg`,
+            left: p.x,
+            top: p.y,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+          } as React.CSSProperties}
+        />
+      ))}
     <Flex align="center" gap="3" className={`p-3 bg-gray-50 rounded-lg overflow-visible ${item.completed ? 'opacity-60' : ''}`}>
-      <div className="relative flex-shrink-0 overflow-visible">
+      <div ref={checkboxRef} className="flex-shrink-0">
         <Checkbox
           checked={item.completed}
           onCheckedChange={handleToggleComplete}
           size="2"
         />
-        {particles.map((p) => (
-          <span
-            key={p.id}
-            className="confetti-particle"
-            style={{
-              '--confetti-x': `${p.x}px`,
-              '--confetti-y': `${p.y}px`,
-              backgroundColor: p.color,
-              width: p.size,
-              height: p.size,
-              animationDelay: `${p.delay}s`,
-            } as React.CSSProperties}
-          />
-        ))}
       </div>
 
       {isEditing ? (
@@ -143,6 +187,7 @@ export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemC
         </Flex>
       )}
     </Flex>
+    </div>
   );
 });
 
