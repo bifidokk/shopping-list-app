@@ -1,4 +1,4 @@
-import type { ShoppingList, ShoppingItem, ListShare } from '../types';
+import type { ApiShoppingListResponse, ApiShoppingItemResponse, ApiListShareResponse } from '../types';
 
 export interface CreateListRequest {
   name: string;
@@ -24,10 +24,10 @@ export interface CreateShareRequest {
   telegramUsername: string;
 }
 
-// Backend returns plain types directly (not wrapped in objects)
-export type ListsResponse = ShoppingList[];
-export type ListResponse = ShoppingList;
-export type ItemResponse = ShoppingItem;
-export type ItemsResponse = ShoppingItem[];
-export type ShareResponse = ListShare;
-export type SharesResponse = ListShare[];
+// Backend returns JSON with string dates, not parsed Date objects
+export type ListsResponse = ApiShoppingListResponse[];
+export type ListResponse = ApiShoppingListResponse;
+export type ItemResponse = ApiShoppingItemResponse;
+export type ItemsResponse = ApiShoppingItemResponse[];
+export type ShareResponse = ApiListShareResponse;
+export type SharesResponse = ApiListShareResponse[];

@@ -60,6 +60,27 @@ interface TelegramWebApp {
     notificationOccurred(type: 'error' | 'success' | 'warning'): void;
     selectionChanged(): void;
   };
+  safeAreaInset?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
+  contentSafeAreaInset?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
+  showPopup(params: {
+    title?: string;
+    message: string;
+    buttons?: Array<{
+      id?: string;
+      type?: 'default' | 'ok' | 'close' | 'cancel' | 'destructive';
+      text: string;
+    }>;
+  }, callback?: (buttonId: string) => void): void;
   ready(): void;
   expand(): void;
   close(): void;

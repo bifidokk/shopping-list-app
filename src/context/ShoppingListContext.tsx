@@ -235,7 +235,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     try {
       const response = await shoppingListsApi.getLists();
       // Backend returns plain array with summary data (totalItems, completedItems)
-      const lists = response.map((list: ApiShoppingListResponse) => ({
+      const lists: ShoppingList[] = response.map((list: ApiShoppingListResponse) => ({
         ...list,
         id: Number(list.id),
         createdAt: new Date(list.createdAt),
@@ -245,6 +245,14 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         // Keep counts from backend
         totalItems: list.totalItems ?? 0,
         completedItems: list.completedItems ?? 0,
+        shares: list.shares?.map(share => ({
+          ...share,
+          id: Number(share.id),
+          listId: Number(share.listId),
+          ownerId: Number(share.ownerId),
+          sharedWithUserId: Number(share.sharedWithUserId),
+          createdAt: new Date(share.createdAt),
+        })),
       }));
       dispatch({ type: 'SET_LISTS', payload: lists });
     } catch (error) {
@@ -296,9 +304,9 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'ADD_LIST', payload: tempList });
 
     try {
-      const response = await shoppingListsApi.createList({ name }) as ApiShoppingListResponse;
+      const response = await shoppingListsApi.createList({ name });
       // Backend returns plain object directly
-      const list = {
+      const list: ShoppingList = {
         ...response,
         id: Number(response.id),
         createdAt: new Date(response.createdAt),
@@ -308,6 +316,14 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
           id: Number(item.id),
           completed: item.isDone ?? item.completed ?? false,
           createdAt: new Date(item.createdAt),
+        })),
+        shares: response.shares?.map(share => ({
+          ...share,
+          id: Number(share.id),
+          listId: Number(share.listId),
+          ownerId: Number(share.ownerId),
+          sharedWithUserId: Number(share.sharedWithUserId),
+          createdAt: new Date(share.createdAt),
         })),
       };
 
@@ -413,7 +429,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'UPDATE_ITEM', payload: { listId, itemId, updates: { completed: newCompleted } } });
 
     try {
-      const response = await shoppingListsApi.toggleItem(listId, itemId) as ApiShoppingItemResponse;
+      const response = await shoppingListsApi.toggleItem(listId, itemId);
       // Backend returns plain object directly
       const updatedItem = {
         ...response,
@@ -447,7 +463,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'ADD_ITEM', payload: { listId, item: tempItem } });
 
     try {
-      const response = await shoppingListsApi.addItem(listId, { name }) as ApiShoppingItemResponse;
+      const response = await shoppingListsApi.addItem(listId, { name });
       // Backend returns plain object directly
       const item = {
         ...response,
@@ -556,7 +572,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     dispatch({ type: 'ADD_SHARE', payload: { listId, share: tempShare } });
 
     try {
-      const response = await shoppingListsApi.shareList(listId, { telegramUsername }) as ApiListShareResponse;
+      const response = await shoppingListsApi.shareList(listId, { telegramUsername });
       const share: ListShare = {
         ...response,
         id: Number(response.id),
