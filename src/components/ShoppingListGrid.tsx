@@ -78,7 +78,7 @@ export function ShoppingListGrid() {
 
   return (
     <div className="max-w-md mx-auto bg-white h-screen flex flex-col">
-      <div className="bg-blue-500 p-4 flex-shrink-0">
+      <div className="bg-blue-500 p-4 flex-shrink-0" style={{ paddingTop: 'calc(var(--tg-safe-area-inset-top) + var(--tg-content-safe-area-inset-top) + 1rem)' }}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">

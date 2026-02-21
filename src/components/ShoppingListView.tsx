@@ -92,7 +92,7 @@ export function ShoppingListView() {
 
   return (
     <div className="max-w-md mx-auto bg-white h-screen flex flex-col">
-      <div className="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 p-4 flex-shrink-0" style={{ paddingTop: 'calc(var(--tg-safe-area-inset-top) + var(--tg-content-safe-area-inset-top) + 1rem)' }}>
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate('/')}
