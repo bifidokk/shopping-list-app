@@ -38,11 +38,16 @@ export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemC
   const handleToggleComplete = () => {
     if (!item.completed) {
       setParticles(generateParticles());
-      setTimeout(() => setParticles([]), 700);
       notification('success');
+      impact('light');
+      // Delay the toggle so confetti plays before the item moves to the Completed section
+      setTimeout(() => {
+        toggleItem(listId, item.id);
+      }, 500);
+    } else {
+      toggleItem(listId, item.id);
+      impact('light');
     }
-    toggleItem(listId, item.id);
-    impact('light');
   };
 
   const handleEdit = () => {
@@ -68,8 +73,8 @@ export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemC
   };
 
   return (
-    <Flex align="center" gap="3" className={`p-3 bg-gray-50 rounded-lg ${item.completed ? 'opacity-60' : ''}`}>
-      <div className="relative flex-shrink-0">
+    <Flex align="center" gap="3" className={`p-3 bg-gray-50 rounded-lg overflow-visible ${item.completed ? 'opacity-60' : ''}`}>
+      <div className="relative flex-shrink-0 overflow-visible">
         <Checkbox
           checked={item.completed}
           onCheckedChange={handleToggleComplete}
