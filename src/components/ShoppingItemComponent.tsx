@@ -5,6 +5,24 @@ import { useShoppingList } from '../context/ShoppingListContext';
 import type { ShoppingItem } from '../types';
 import { useTelegramHaptics } from '../utils/telegram';
 
+const CONFETTI_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
+
+function generateParticles() {
+  return Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * 360 + (Math.random() * 30 - 15);
+    const distance = 20 + Math.random() * 25;
+    const rad = (angle * Math.PI) / 180;
+    return {
+      id: i,
+      x: Math.cos(rad) * distance,
+      y: Math.sin(rad) * distance,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      size: 3 + Math.random() * 4,
+      delay: Math.random() * 0.1,
+    };
+  });
+}
+
 interface ShoppingItemComponentProps {
   item: ShoppingItem;
   listId: number;
@@ -15,13 +33,16 @@ export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemC
   const { impact, notification } = useTelegramHaptics();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
+  const [particles, setParticles] = useState<ReturnType<typeof generateParticles>>([]);
 
   const handleToggleComplete = () => {
-    toggleItem(listId, item.id);
-    impact('light');
     if (!item.completed) {
+      setParticles(generateParticles());
+      setTimeout(() => setParticles([]), 700);
       notification('success');
     }
+    toggleItem(listId, item.id);
+    impact('light');
   };
 
   const handleEdit = () => {
@@ -48,11 +69,27 @@ export const ShoppingItemComponent = React.memo(({ item, listId }: ShoppingItemC
 
   return (
     <Flex align="center" gap="3" className={`p-3 bg-gray-50 rounded-lg ${item.completed ? 'opacity-60' : ''}`}>
-      <Checkbox
-        checked={item.completed}
-        onCheckedChange={handleToggleComplete}
-        size="2"
-      />
+      <div className="relative flex-shrink-0">
+        <Checkbox
+          checked={item.completed}
+          onCheckedChange={handleToggleComplete}
+          size="2"
+        />
+        {particles.map((p) => (
+          <span
+            key={p.id}
+            className="confetti-particle"
+            style={{
+              '--confetti-x': `${p.x}px`,
+              '--confetti-y': `${p.y}px`,
+              backgroundColor: p.color,
+              width: p.size,
+              height: p.size,
+              animationDelay: `${p.delay}s`,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
 
       {isEditing ? (
         <Flex direction="column" gap="2" style={{ flex: 1 }}>
